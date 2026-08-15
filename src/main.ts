@@ -69,7 +69,17 @@ async function bootstrap() {
     },
     customSiteTitle: 'API Documentation',
     customfavIcon: 'https://nestjs.com/img/logo-small.svg',
+    customJsStr: `
+    (function () {
+      var meta = document.createElement('meta');
+      meta.name = 'color-scheme';
+      meta.content = 'light';
+      document.head.appendChild(meta);
+    })();
+    `,
     customCss: `
+    html {color-scheme: light only;}
+    body {background: #fafafa;}
     .swagger-ui .topbar {display: none}
     .swagger-ui .info {margin: 50px 0;}
     .swagger-ui .info .title {color: #4A90E2;}
