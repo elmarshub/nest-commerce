@@ -152,6 +152,8 @@ model Order {
   cart Cart? @relation(fields: [cartId], references: [id])
 
   shippingAddress String
+  trackingNumber String?
+  notes String?
 
   orderItems OrderItem[]
   payment Payment?
