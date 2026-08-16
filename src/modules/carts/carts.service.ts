@@ -1,0 +1,145 @@
+/* eslint-disable @typescript-eslint/no-redundant-type-constituents */
+import { PrismaService } from '@/prisma/prisma.service';
+import { Cart, CartItem, Product } from '@generated/prisma/client';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
+import { AddCartItemDto } from './dto/add-cart-item.dto';
+import { UpdateCartItemDto } from './dto/update-cart-item.dto';
+import { CartResponseDto } from './dto/cart-response.dto';
+
+type CartWithItems = Cart & {
+  cartItems: (CartItem & { product: Product })[];
+};
+
+@Injectable()
+export class CartsService {
+  constructor(private prisma: PrismaService) {}
+
+  async getCart(userId: string): Promise<CartResponseDto> {
+    const cart = await this.getOrCreateActiveCart(userId);
+
+    return this.formatCart(cart);
+  }
+
+  async addItem(
+    userId: string,
+    { productId, quantity }: AddCartItemDto,
+  ): Promise<CartResponseDto> {
+    const product = await this.prisma.product.findUnique({
+      where: { id: productId },
+    });
+
+    if (!product) {
+      throw new NotFoundException('Product not found');
+    }
+
+    if (!product.isActive) {
+      throw new BadRequestException(
+        `Product "${product.name}" is not available`,
+      );
+    }
+
+    const cart = await this.getOrCreateActiveCart(userId);
+
+    await this.prisma.cartItem.upsert({
+      where: { productId_cartId: { productId, cartId: cart.id } },
+      create: { cartId: cart.id, productId, quantity },
+      update: { quantity: { increment: quantity } },
+    });
+
+    return this.getCart(userId);
+  }
+
+  async updateItem(
+    userId: string,
+    itemId: string,
+    { quantity }: UpdateCartItemDto,
+  ): Promise<CartResponseDto> {
+    await this.getOwnedCartItem(userId, itemId);
+
+    await this.prisma.cartItem.update({
+      where: { id: itemId },
+      data: { quantity },
+    });
+
+    return this.getCart(userId);
+  }
+
+  async removeItem(userId: string, itemId: string): Promise<CartResponseDto> {
+    await this.getOwnedCartItem(userId, itemId);
+
+    await this.prisma.cartItem.delete({ where: { id: itemId } });
+
+    return this.getCart(userId);
+  }
+
+  async clearCart(userId: string): Promise<CartResponseDto> {
+    const cart = await this.getOrCreateActiveCart(userId);
+
+    await this.prisma.cartItem.deleteMany({ where: { cartId: cart.id } });
+
+    return this.getCart(userId);
+  }
+
+  private async getOwnedCartItem(
+    userId: string,
+    itemId: string,
+  ): Promise<CartItem> {
+    const item = await this.prisma.cartItem.findUnique({
+      where: { id: itemId },
+      include: { cart: true },
+    });
+
+    if (!item || item.cart.userId !== userId || item.cart.checkedOut) {
+      throw new NotFoundException('Cart item not found');
+    }
+
+    return item;
+  }
+
+  private async getOrCreateActiveCart(userId: string): Promise<CartWithItems> {
+    const existing = await this.prisma.cart.findFirst({
+      where: { userId, checkedOut: false },
+      include: { cartItems: { include: { product: true } } },
+    });
+
+    if (existing) {
+      return existing;
+    }
+
+    return await this.prisma.cart.create({
+      data: { userId },
+      include: { cartItems: { include: { product: true } } },
+    });
+  }
+
+  private formatCart(cart: CartWithItems): CartResponseDto {
+    const items = cart.cartItems.map((item) => {
+      const price = Number(item.product.price);
+
+      return {
+        id: item.id,
+        productId: item.productId,
+        productName: item.product.name,
+        price,
+        quantity: item.quantity,
+        subtotal: price * item.quantity,
+        isAvailable: item.product.isActive,
+        createdAt: item.createdAt,
+        updatedAt: item.updatedAt,
+      };
+    });
+
+    return {
+      id: cart.id,
+      items,
+      itemCount: items.reduce((sum, item) => sum + item.quantity, 0),
+      totalAmount: items.reduce((sum, item) => sum + item.subtotal, 0),
+      createdAt: cart.createdAt,
+      updatedAt: cart.updatedAt,
+    };
+  }
+}

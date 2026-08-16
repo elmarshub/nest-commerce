@@ -1,6 +1,7 @@
-/* eslint-disable @typescript-eslint/no-unsafe-argument */
 import { PrismaService } from '@/prisma/prisma.service';
+import { EmailService } from '@/email/email.service';
 import {
+  BadRequestException,
   ConflictException,
   Injectable,
   InternalServerErrorException,
@@ -9,16 +10,24 @@ import {
 import { RegisterDto } from './dto/register.dto';
 import { AuthResponseDto } from './dto/auth-response.dto';
 import * as bcrypt from 'bcrypt';
-import { randomBytes } from 'crypto';
+import { randomBytes, createHash } from 'crypto';
 import { JwtService } from '@nestjs/jwt';
 import { LoginDto } from './dto/login.dto';
+import { ForgotPasswordDto } from './dto/forgot-password.dto';
+import { ResetPasswordDto } from './dto/reset-password.dto';
+import { VerifyEmailDto } from './dto/verify-email.dto';
+import { ResendVerificationDto } from './dto/resend-verification.dto';
 
 @Injectable()
 export class AuthService {
   private readonly SALT_ROUNDS = 12;
+  private readonly RESET_TOKEN_TTL_MS = 60 * 60 * 1000; // 1 hour
+  private readonly VERIFICATION_TOKEN_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
+
   constructor(
     private prisma: PrismaService,
     private jwtService: JwtService,
+    private emailService: EmailService,
   ) {}
 
   // register new user
@@ -55,6 +64,10 @@ export class AuthService {
       const tokens = await this.generateTokens(user.id, user.email);
 
       await this.updateRefreshToken(user.id, tokens.refreshToken);
+      // TODO: re-enable once the frontend has a /verify-email page to send users to.
+      // Verification itself (POST /auth/verify-email, /auth/resend-verification) still works —
+      // this just stops registration from firing the email so testing isn't blocked on it.
+      // await this.sendVerificationEmail(user.id, user.email);
 
       return {
         ...tokens,
@@ -66,6 +79,73 @@ export class AuthService {
       }
       throw new InternalServerErrorException('Failed to register user');
     }
+  }
+
+  private async sendVerificationEmail(
+    userId: string,
+    email: string,
+  ): Promise<void> {
+    const rawToken = randomBytes(32).toString('hex');
+    const hashedToken = this.hashToken(rawToken);
+
+    await this.prisma.emailVerificationToken.create({
+      data: {
+        userId,
+        token: hashedToken,
+        expiresAt: new Date(Date.now() + this.VERIFICATION_TOKEN_TTL_MS),
+      },
+    });
+
+    await this.emailService.sendEmailVerificationEmail(email, rawToken);
+  }
+
+  async verifyEmail({ token }: VerifyEmailDto): Promise<{ message: string }> {
+    const hashedToken = this.hashToken(token);
+
+    const verificationToken =
+      await this.prisma.emailVerificationToken.findUnique({
+        where: { token: hashedToken },
+      });
+
+    if (
+      !verificationToken ||
+      verificationToken.usedAt ||
+      verificationToken.expiresAt < new Date()
+    ) {
+      throw new BadRequestException('Invalid or expired verification token');
+    }
+
+    await this.prisma.$transaction([
+      this.prisma.user.update({
+        where: { id: verificationToken.userId },
+        data: { emailVerified: true, emailVerifiedAt: new Date() },
+      }),
+      this.prisma.emailVerificationToken.update({
+        where: { id: verificationToken.id },
+        data: { usedAt: new Date() },
+      }),
+    ]);
+
+    return { message: 'Email verified successfully' };
+  }
+
+  async resendVerification({
+    email,
+  }: ResendVerificationDto): Promise<{ message: string }> {
+    const genericResponse = {
+      message:
+        'If an account with that email exists and is not yet verified, a verification link has been sent',
+    };
+
+    const user = await this.prisma.user.findUnique({ where: { email } });
+
+    if (!user || user.emailVerified) {
+      return genericResponse;
+    }
+
+    await this.sendVerificationEmail(user.id, user.email);
+
+    return genericResponse;
   }
 
   //   token
@@ -149,6 +229,70 @@ export class AuthService {
         role: user.role,
       },
     };
+  }
+
+  async forgotPassword({
+    email,
+  }: ForgotPasswordDto): Promise<{ message: string }> {
+    const genericResponse = {
+      message:
+        'If an account with that email exists, a password reset link has been sent',
+    };
+
+    const user = await this.prisma.user.findUnique({ where: { email } });
+
+    if (!user) {
+      return genericResponse;
+    }
+
+    const rawToken = randomBytes(32).toString('hex');
+    const hashedToken = this.hashToken(rawToken);
+
+    await this.prisma.passwordResetToken.create({
+      data: {
+        userId: user.id,
+        token: hashedToken,
+        expiresAt: new Date(Date.now() + this.RESET_TOKEN_TTL_MS),
+      },
+    });
+
+    await this.emailService.sendPasswordResetEmail(email, rawToken);
+
+    return genericResponse;
+  }
+
+  async resetPassword({
+    token,
+    newPassword,
+  }: ResetPasswordDto): Promise<{ message: string }> {
+    const hashedToken = this.hashToken(token);
+
+    const resetToken = await this.prisma.passwordResetToken.findUnique({
+      where: { token: hashedToken },
+    });
+
+    if (!resetToken || resetToken.usedAt || resetToken.expiresAt < new Date()) {
+      throw new BadRequestException('Invalid or expired reset token');
+    }
+
+    const hashedPassword = await bcrypt.hash(newPassword, this.SALT_ROUNDS);
+
+    await this.prisma.$transaction([
+      this.prisma.user.update({
+        where: { id: resetToken.userId },
+        data: { password: hashedPassword, refreshToken: null },
+      }),
+      this.prisma.passwordResetToken.update({
+        where: { id: resetToken.id },
+        data: { usedAt: new Date() },
+      }),
+    ]);
+
+    return { message: 'Password has been reset successfully' };
+  }
+
+  private hashToken(token: string): string {
+    return createHash('sha256').update(token).digest('hex');
   }
 
   async logout(userId: string): Promise<void> {

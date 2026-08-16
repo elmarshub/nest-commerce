@@ -1,5 +1,6 @@
 import { PrismaService } from '@/prisma/prisma.service';
 import { Prisma } from '@generated/prisma/client';
+import { Role } from '@generated/prisma/enums';
 import {
   BadRequestException,
   ConflictException,
@@ -139,6 +140,24 @@ export class UsersService {
     await this.findOne(userId);
 
     await this.prisma.user.delete({ where: { id: userId } });
+  }
+
+  async updateRole(
+    actorId: string,
+    userId: string,
+    role: Role,
+  ): Promise<UsersResponseDto> {
+    if (actorId === userId) {
+      throw new BadRequestException('You cannot change your own role');
+    }
+
+    await this.findOne(userId);
+
+    return await this.prisma.user.update({
+      where: { id: userId },
+      data: { role },
+      select: USER_SELECT,
+    });
   }
 
   async findAll(

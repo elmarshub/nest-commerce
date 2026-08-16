@@ -1,5 +1,5 @@
-/* eslint-disable @typescript-eslint/no-redundant-type-constituents */
 import { PrismaService } from '@/prisma/prisma.service';
+import { EmailService } from '@/email/email.service';
 import {
   Order,
   OrderItem,
@@ -10,7 +10,6 @@ import {
 import { OrderStatus } from '@generated/prisma/enums';
 import {
   BadRequestException,
-  ConflictException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
@@ -22,13 +21,25 @@ import { UpdateOrderDto } from './dto/update-order.dto';
 
 @Injectable()
 export class OrdersService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private emailService: EmailService,
+  ) {}
 
   async create(
     userId: string,
-    { items, shippingAddress }: CreateOrderDto,
+    { shippingAddress }: CreateOrderDto,
   ): Promise<OrderResponseDto> {
     const order = await this.prisma.$transaction(async (tx) => {
+      const cart = await tx.cart.findFirst({
+        where: { userId, checkedOut: false },
+        include: { cartItems: { include: { product: true } } },
+      });
+
+      if (!cart || cart.cartItems.length === 0) {
+        throw new BadRequestException('Your cart is empty');
+      }
+
       let totalAmount = new Prisma.Decimal(0);
       const orderItemsData: {
         productId: string;
@@ -36,14 +47,8 @@ export class OrdersService {
         price: Prisma.Decimal;
       }[] = [];
 
-      for (const item of items) {
-        const product = await tx.product.findUnique({
-          where: { id: item.productId },
-        });
-
-        if (!product) {
-          throw new NotFoundException(`Product ${item.productId} not found`);
-        }
+      for (const item of cart.cartItems) {
+        const { product } = item;
 
         if (!product.isActive) {
           throw new BadRequestException(
@@ -51,15 +56,9 @@ export class OrdersService {
           );
         }
 
-        if (!product.price.equals(new Prisma.Decimal(item.price))) {
-          throw new ConflictException(
-            `Price for "${product.name}" has changed, please refresh your cart`,
-          );
-        }
-
         try {
           await tx.product.update({
-            where: { id: item.productId, stock: { gte: item.quantity } },
+            where: { id: product.id, stock: { gte: item.quantity } },
             data: { stock: { decrement: item.quantity } },
           });
         } catch (error) {
@@ -76,7 +75,7 @@ export class OrdersService {
         }
 
         orderItemsData.push({
-          productId: item.productId,
+          productId: product.id,
           quantity: item.quantity,
           price: product.price,
         });
@@ -84,9 +83,15 @@ export class OrdersService {
         totalAmount = totalAmount.add(product.price.mul(item.quantity));
       }
 
+      await tx.cart.update({
+        where: { id: cart.id },
+        data: { checkedOut: true },
+      });
+
       return await tx.order.create({
         data: {
           userId,
+          cartId: cart.id,
           shippingAddress,
           totalAmount,
           orderItems: { create: orderItemsData },
@@ -98,7 +103,14 @@ export class OrdersService {
       });
     });
 
-    return this.formatOrder(order);
+    const formatted = this.formatOrder(order);
+
+    await this.emailService.sendOrderConfirmationEmail(order.user.email, {
+      orderNumber: formatted.orderNumber,
+      totalAmount: formatted.totalAmount,
+    });
+
+    return formatted;
   }
 
   async findAllForUser(
@@ -189,7 +201,17 @@ export class OrdersService {
         },
       });
 
-      return this.formatOrder(order);
+      const formatted = this.formatOrder(order);
+
+      if (status) {
+        await this.emailService.sendOrderStatusUpdateEmail(order.user.email, {
+          orderNumber: formatted.orderNumber,
+          status: formatted.status,
+          trackingNumber: formatted.trackingNumber,
+        });
+      }
+
+      return formatted;
     } catch (error) {
       if (
         error instanceof Prisma.PrismaClientKnownRequestError &&

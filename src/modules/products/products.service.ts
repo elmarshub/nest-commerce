@@ -11,7 +11,7 @@ import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 import { UpdateStockDto, StockOperation } from './dto/update-stock.dto';
 import { ProductResponseDto } from './dto/product-response.dto';
-import { QueryProductDto } from './dto/query-product.dto';
+import { QueryProductDto, ProductSortBy } from './dto/query-product.dto';
 import { PaginatedProductsResponseDto } from './dto/paginated-products-response.dto';
 
 @Injectable()
@@ -39,7 +39,7 @@ export class ProductsService {
 
     const product = await this.prisma.product.create({
       data: { ...data, price: new Prisma.Decimal(data.price) },
-      include: { category: true },
+      include: { category: true, reviews: { select: { rating: true } } },
     });
 
     return this.formatProduct(product);
@@ -54,6 +54,9 @@ export class ProductsService {
       isActive,
       minPrice,
       maxPrice,
+      inStock,
+      sortBy = ProductSortBy.CREATED_AT,
+      sortOrder = 'desc',
     } = query;
 
     const where: Prisma.ProductWhereInput = {
@@ -71,13 +74,14 @@ export class ProductsService {
           ...(maxPrice !== undefined && { lte: maxPrice }),
         },
       }),
+      ...(inStock && { stock: { gt: 0 } }),
     };
 
     const [products, total] = await Promise.all([
       this.prisma.product.findMany({
         where,
-        include: { category: true },
-        orderBy: { createdAt: 'desc' },
+        include: { category: true, reviews: { select: { rating: true } } },
+        orderBy: { [sortBy]: sortOrder },
         skip: (page - 1) * limit,
         take: limit,
       }),
@@ -98,7 +102,7 @@ export class ProductsService {
   async findOne(id: string): Promise<ProductResponseDto> {
     const product = await this.prisma.product.findUnique({
       where: { id },
-      include: { category: true },
+      include: { category: true, reviews: { select: { rating: true } } },
     });
 
     if (!product) {
@@ -148,7 +152,7 @@ export class ProductsService {
           price: new Prisma.Decimal(data.price),
         }),
       },
-      include: { category: true },
+      include: { category: true, reviews: { select: { rating: true } } },
     });
 
     return this.formatProduct(updatedProduct);
@@ -178,7 +182,7 @@ export class ProductsService {
                 ? { decrement: quantity }
                 : quantity,
         },
-        include: { category: true },
+        include: { category: true, reviews: { select: { rating: true } } },
       });
 
       return this.formatProduct(updatedProduct);
@@ -224,11 +228,36 @@ export class ProductsService {
   }
 
   private formatProduct(
-    product: Product & { category: Category },
+    product: Product & {
+      category: Category;
+      reviews: { rating: number }[];
+    },
   ): ProductResponseDto {
+    const reviewCount = product.reviews.length;
+    const averageRating =
+      reviewCount > 0
+        ? Math.round(
+            (product.reviews.reduce((sum, r) => sum + r.rating, 0) /
+              reviewCount) *
+              10,
+          ) / 10
+        : null;
+
     return {
-      ...product,
+      id: product.id,
+      name: product.name,
+      description: product.description,
       price: Number(product.price),
+      stock: product.stock,
+      sku: product.sku,
+      imageUrl: product.imageUrl,
+      isActive: product.isActive,
+      categoryId: product.categoryId,
+      category: product.category,
+      averageRating,
+      reviewCount,
+      createdAt: product.createdAt,
+      updatedAt: product.updatedAt,
     };
   }
 }

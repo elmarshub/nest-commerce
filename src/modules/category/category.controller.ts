@@ -25,18 +25,24 @@ import { UpdateCategoryDto } from './dto/update-category.dto';
 import { CategoryResponseDto } from './dto/category-response.dto';
 import { QueryCategoryDto } from './dto/query-category.dto';
 import { PaginatedCategoriesResponseDto } from './dto/paginated-categories-response.dto';
-import { JwtAuthGuard } from '@/common/guards/jwt-auth.guard';
 import { RolesGuard } from '@/common/guards/roles.guard';
 import { Roles } from '@/common/decorators/roles.decorator';
+import { Public } from '@/common/decorators/public.decorator';
+import { GetUser } from '@/common/decorators/get-user.decorator';
+import { AuditLogService } from '@/audit-log/audit-log.service';
+import { AuditAction } from '@/audit-log/audit-log.constants';
 import { Role } from '@generated/prisma/enums';
 
 @ApiTags('Categories')
 @Controller('categories')
 export class CategoryController {
-  constructor(private readonly categoryService: CategoryService) {}
+  constructor(
+    private readonly categoryService: CategoryService,
+    private readonly auditLogService: AuditLogService,
+  ) {}
 
   @Post()
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(RolesGuard)
   @Roles(Role.ADMIN)
   @HttpCode(HttpStatus.CREATED)
   @ApiBearerAuth('JWT-auth')
@@ -59,6 +65,7 @@ export class CategoryController {
     return await this.categoryService.create(createCategoryDto);
   }
 
+  @Public()
   @Get()
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Get all categories' })
@@ -73,6 +80,7 @@ export class CategoryController {
     return await this.categoryService.findAll(queryDto);
   }
 
+  @Public()
   @Get(':id')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Get category by id' })
@@ -87,6 +95,7 @@ export class CategoryController {
     return await this.categoryService.findOne(id);
   }
 
+  @Public()
   @Get('slug/:slug')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Get category by slug' })
@@ -102,7 +111,7 @@ export class CategoryController {
   }
 
   @Patch(':id')
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(RolesGuard)
   @Roles(Role.ADMIN)
   @HttpCode(HttpStatus.OK)
   @ApiBearerAuth('JWT-auth')
@@ -129,7 +138,7 @@ export class CategoryController {
   }
 
   @Delete(':id')
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(RolesGuard)
   @Roles(Role.ADMIN)
   @HttpCode(HttpStatus.OK)
   @ApiBearerAuth('JWT-auth')
@@ -144,7 +153,20 @@ export class CategoryController {
     description:
       'Cannot delete a category that still has products assigned to it',
   })
-  async remove(@Param('id') id: string): Promise<{ message: string }> {
-    return await this.categoryService.remove(id);
+  async remove(
+    @GetUser('id') actorId: string,
+    @GetUser('email') actorEmail: string,
+    @Param('id') id: string,
+  ): Promise<{ message: string }> {
+    const result = await this.categoryService.remove(id);
+
+    await this.auditLogService.record({
+      actor: { id: actorId, email: actorEmail },
+      action: AuditAction.CATEGORY_DELETED,
+      targetType: 'Category',
+      targetId: id,
+    });
+
+    return result;
   }
 }

@@ -1,4 +1,3 @@
-import { JwtAuthGuard } from '@/common/guards/jwt-auth.guard';
 import { RolesGuard } from '@/common/guards/roles.guard';
 import { Roles } from '@/common/decorators/roles.decorator';
 import { GetUser } from '@/common/decorators/get-user.decorator';
@@ -37,14 +36,18 @@ import { Role } from '@generated/prisma/enums';
 @ApiTags('Orders')
 @ApiBearerAuth('JWT-auth')
 @Controller('orders')
-@UseGuards(JwtAuthGuard, RolesGuard)
+@UseGuards(RolesGuard)
 export class OrdersController {
   constructor(private readonly orderService: OrdersService) {}
 
   @Post()
   @ModerateThrottle()
   @HttpCode(HttpStatus.CREATED)
-  @ApiOperation({ summary: 'Create a new order' })
+  @ApiOperation({
+    summary: 'Create a new order from the current cart',
+    description:
+      "Checks out the current user's active cart: validates stock and product availability, creates the order, and clears the cart",
+  })
   @ApiBody({ type: CreateOrderDto })
   @ApiResponse({
     status: 201,
@@ -53,14 +56,10 @@ export class OrdersController {
   })
   @ApiResponse({
     status: 400,
-    description: 'Insufficient stock or product is not available',
+    description:
+      'Cart is empty, a product is no longer available, or there is insufficient stock',
   })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
-  @ApiResponse({ status: 404, description: 'Product not found' })
-  @ApiResponse({
-    status: 409,
-    description: 'Price for one or more items has changed',
-  })
   async create(
     @GetUser('id') userId: string,
     @Body() createOrderDto: CreateOrderDto,

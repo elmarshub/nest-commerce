@@ -1,4 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
+import { AuditLogService } from '@/audit-log/audit-log.service';
 import { UsersController } from './users.controller';
 import { UsersService } from './users.service';
 
@@ -18,8 +19,10 @@ describe('UsersController', () => {
             changePassword: jest.fn(),
             deleteAccount: jest.fn(),
             remove: jest.fn(),
+            updateRole: jest.fn(),
           },
         },
+        { provide: AuditLogService, useValue: { record: jest.fn() } },
       ],
     }).compile();
 

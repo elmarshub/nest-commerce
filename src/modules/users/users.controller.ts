@@ -1,4 +1,3 @@
-import { JwtAuthGuard } from '@/common/guards/jwt-auth.guard';
 import {
   Body,
   Controller,
@@ -24,19 +23,25 @@ import { RolesGuard } from '@/common/guards/roles.guard';
 import { Roles } from '@/common/decorators/roles.decorator';
 import { GetUser } from '@/common/decorators/get-user.decorator';
 import { Role } from '@generated/prisma/enums';
+import { AuditLogService } from '@/audit-log/audit-log.service';
+import { AuditAction } from '@/audit-log/audit-log.constants';
 import { UsersService } from './users.service';
 import { UsersResponseDto } from './dto/user-response.dto';
 import { UpdateProfileDto } from './dto/update-profile.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
 import { DeleteAccountDto } from './dto/delete-account.dto';
+import { UpdateRoleDto } from './dto/update-role.dto';
 import { PaginatedUsersResponseDto } from './dto/paginated-users-response.dto';
 
 @ApiTags('Users')
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard, RolesGuard)
+@UseGuards(RolesGuard)
 @Controller('users')
 export class UsersController {
-  constructor(private readonly usersService: UsersService) {}
+  constructor(
+    private readonly usersService: UsersService,
+    private readonly auditLogService: AuditLogService,
+  ) {}
 
   @Get('me')
   @HttpCode(HttpStatus.OK)
@@ -140,9 +145,53 @@ export class UsersController {
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @ApiResponse({ status: 403, description: 'Forbidden' })
   @ApiResponse({ status: 404, description: 'User not found' })
-  async remove(@Param('id') id: string): Promise<{ message: string }> {
+  async remove(
+    @GetUser('id') actorId: string,
+    @GetUser('email') actorEmail: string,
+    @Param('id') id: string,
+  ): Promise<{ message: string }> {
     await this.usersService.remove(id);
 
+    await this.auditLogService.record({
+      actor: { id: actorId, email: actorEmail },
+      action: AuditAction.USER_DELETED,
+      targetType: 'User',
+      targetId: id,
+    });
+
     return { message: 'User deleted successfully' };
+  }
+
+  @Patch(':id/role')
+  @Roles(Role.ADMIN)
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: "Change a user's role (admin only)" })
+  @ApiParam({ name: 'id', description: 'The user id' })
+  @ApiResponse({
+    status: 200,
+    description: 'The updated user',
+    type: UsersResponseDto,
+  })
+  @ApiResponse({ status: 400, description: 'You cannot change your own role' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 403, description: 'Forbidden' })
+  @ApiResponse({ status: 404, description: 'User not found' })
+  async updateRole(
+    @GetUser('id') actorId: string,
+    @GetUser('email') actorEmail: string,
+    @Param('id') id: string,
+    @Body() { role }: UpdateRoleDto,
+  ): Promise<UsersResponseDto> {
+    const user = await this.usersService.updateRole(actorId, id, role);
+
+    await this.auditLogService.record({
+      actor: { id: actorId, email: actorEmail },
+      action: AuditAction.USER_ROLE_CHANGED,
+      targetType: 'User',
+      targetId: id,
+      metadata: { newRole: role },
+    });
+
+    return user;
   }
 }

@@ -65,6 +65,19 @@ export class ProductResponseDto {
   category!: ProductCategoryDto;
 
   @ApiProperty({
+    description: 'Average review rating, null if there are no reviews yet',
+    example: 4.5,
+    nullable: true,
+  })
+  averageRating!: number | null;
+
+  @ApiProperty({
+    description: 'Number of reviews for this product',
+    example: 12,
+  })
+  reviewCount!: number;
+
+  @ApiProperty({
     description: 'Product creation date',
     example: '2026-10-10T12:34:56.789Z',
   })

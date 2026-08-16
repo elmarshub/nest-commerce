@@ -26,18 +26,24 @@ import { UpdateStockDto } from './dto/update-stock.dto';
 import { ProductResponseDto } from './dto/product-response.dto';
 import { QueryProductDto } from './dto/query-product.dto';
 import { PaginatedProductsResponseDto } from './dto/paginated-products-response.dto';
-import { JwtAuthGuard } from '@/common/guards/jwt-auth.guard';
 import { RolesGuard } from '@/common/guards/roles.guard';
 import { Roles } from '@/common/decorators/roles.decorator';
+import { Public } from '@/common/decorators/public.decorator';
+import { GetUser } from '@/common/decorators/get-user.decorator';
+import { AuditLogService } from '@/audit-log/audit-log.service';
+import { AuditAction } from '@/audit-log/audit-log.constants';
 import { Role } from '@generated/prisma/enums';
 
 @ApiTags('Products')
 @Controller('products')
 export class ProductsController {
-  constructor(private readonly productService: ProductsService) {}
+  constructor(
+    private readonly productService: ProductsService,
+    private readonly auditLogService: AuditLogService,
+  ) {}
 
   @Post()
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(RolesGuard)
   @Roles(Role.ADMIN)
   @HttpCode(HttpStatus.CREATED)
   @ApiBearerAuth('JWT-auth')
@@ -61,6 +67,7 @@ export class ProductsController {
     return await this.productService.create(createProductDto);
   }
 
+  @Public()
   @Get()
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Get all products' })
@@ -75,6 +82,7 @@ export class ProductsController {
     return await this.productService.findAll(queryDto);
   }
 
+  @Public()
   @Get(':id')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Get product by id' })
@@ -90,7 +98,7 @@ export class ProductsController {
   }
 
   @Patch(':id')
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(RolesGuard)
   @Roles(Role.ADMIN)
   @HttpCode(HttpStatus.OK)
   @ApiBearerAuth('JWT-auth')
@@ -117,7 +125,7 @@ export class ProductsController {
   }
 
   @Patch(':id/stock')
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(RolesGuard)
   @Roles(Role.ADMIN)
   @HttpCode(HttpStatus.OK)
   @ApiBearerAuth('JWT-auth')
@@ -144,7 +152,7 @@ export class ProductsController {
   }
 
   @Delete(':id')
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(RolesGuard)
   @Roles(Role.ADMIN)
   @HttpCode(HttpStatus.OK)
   @ApiBearerAuth('JWT-auth')
@@ -158,7 +166,20 @@ export class ProductsController {
     status: 409,
     description: 'Cannot delete a product that has existing orders',
   })
-  async remove(@Param('id') id: string): Promise<{ message: string }> {
-    return await this.productService.remove(id);
+  async remove(
+    @GetUser('id') actorId: string,
+    @GetUser('email') actorEmail: string,
+    @Param('id') id: string,
+  ): Promise<{ message: string }> {
+    const result = await this.productService.remove(id);
+
+    await this.auditLogService.record({
+      actor: { id: actorId, email: actorEmail },
+      action: AuditAction.PRODUCT_DELETED,
+      targetType: 'Product',
+      targetId: id,
+    });
+
+    return result;
   }
 }

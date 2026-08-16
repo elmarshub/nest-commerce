@@ -1,6 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '@/prisma/prisma.service';
+import { EmailService } from '@/email/email.service';
 import { AuthService } from './auth.service';
 
 describe('AuthService', () => {
@@ -12,6 +13,7 @@ describe('AuthService', () => {
         AuthService,
         { provide: PrismaService, useValue: {} },
         { provide: JwtService, useValue: {} },
+        { provide: EmailService, useValue: {} },
       ],
     }).compile();
 

@@ -3,11 +3,15 @@ import { AppModule } from './app.module';
 import { Logger } from '@nestjs/common/services/logger.service';
 import { ValidationPipe } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create(AppModule, { rawBody: true });
 
   app.setGlobalPrefix('api/v1');
+
+  // catch every unhandled/thrown error and return a consistent error shape
+  app.useGlobalFilters(new AllExceptionsFilter());
 
   // set global pipes
   app.useGlobalPipes(
@@ -31,10 +35,20 @@ async function bootstrap() {
 
   // enable swagger docs
   const config = new DocumentBuilder()
-    .setTitle('Api Documentation')
-    .setDescription('API documentation for the ecommerce')
+    .setTitle('Nest Commerce API')
+    .setDescription('API documentation for Nest Commerce.')
     .setVersion('1.0')
-    .addTag('auth', 'Authentication related endpoints')
+    .addTag('Auth', 'Authentication related endpoints')
+    .addTag('Users')
+    .addTag('Categories')
+    .addTag('Products')
+    .addTag('Cart')
+    .addTag('Orders')
+    .addTag('Payments')
+    .addTag('Addresses')
+    .addTag('Reviews')
+    .addTag('Meta')
+    .addTag('Audits')
     .addBearerAuth(
       {
         type: 'http',
@@ -64,10 +78,9 @@ async function bootstrap() {
   SwaggerModule.setup('api/docs', app, document, {
     swaggerOptions: {
       persistAuthorization: true,
-      tagsSorter: 'alpha',
       operationsSorter: 'alpha',
     },
-    customSiteTitle: 'API Documentation',
+    customSiteTitle: 'Nest Commerce API Docs',
     customfavIcon: 'https://nestjs.com/img/logo-small.svg',
     customJsStr: `
     (function () {
