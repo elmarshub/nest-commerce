@@ -7,13 +7,16 @@ import {
   HttpCode,
   HttpStatus,
   Param,
+  ParseIntPipe,
   Patch,
+  Query,
   UseGuards,
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
   ApiOperation,
   ApiParam,
+  ApiQuery,
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
@@ -51,15 +54,20 @@ export class UsersController {
   @Roles(Role.ADMIN)
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Get all users (admin only)' })
+  @ApiQuery({ name: 'skip', required: false, type: Number })
+  @ApiQuery({ name: 'take', required: false, type: Number })
   @ApiResponse({
     status: 200,
-    description: 'The list of all users',
+    description: 'The paginated list of users',
     type: [UsersResponseDto],
   })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @ApiResponse({ status: 403, description: 'Forbidden' })
-  async findAll(): Promise<UsersResponseDto[]> {
-    return await this.usersService.findAll();
+  async findAll(
+    @Query('skip', new ParseIntPipe({ optional: true })) skip?: number,
+    @Query('take', new ParseIntPipe({ optional: true })) take?: number,
+  ): Promise<{ users: UsersResponseDto[]; total: number }> {
+    return await this.usersService.findAll(skip, take);
   }
 
   @Get(':id')
