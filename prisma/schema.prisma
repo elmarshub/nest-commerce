@@ -184,16 +184,20 @@ model Cart {
   updatedAt DateTime @updatedAt
 
   @@index([userId])
+  // A partial unique index on (userId) WHERE checkedOut = false is added via
+  // migration 20260816220100_cart_active_unique_index — Prisma's schema
+  // language has no way to express a partial index, so it isn't declared here.
   @@map("carts")
 }
 
 model Payment {
-  id            String        @id @default(uuid())
-  amount        Decimal       @db.Decimal(10, 2)
-  status        PaymentStatus @default(PENDING)
-  currency      String        @default("usd")
-  paymentMethod String?
-  transactionId String?
+  id                   String        @id @default(uuid())
+  amount               Decimal       @db.Decimal(10, 2)
+  status               PaymentStatus @default(PENDING)
+  currency             String        @default("usd")
+  paymentMethod        String?
+  transactionId        String?
+  stripeIdempotencyKey String?
 
   userId String
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -217,7 +221,6 @@ model WebhookEvent {
 
   createdAt DateTime @default(now())
 
-  @@index([stripeEventId])
   @@map("webhook_events")
 }
 
@@ -233,7 +236,6 @@ model PasswordResetToken {
   createdAt DateTime @default(now())
 
   @@index([userId])
-  @@index([token])
   @@map("password_reset_tokens")
 }
 
@@ -249,7 +251,6 @@ model EmailVerificationToken {
   createdAt DateTime @default(now())
 
   @@index([userId])
-  @@index([token])
   @@map("email_verification_tokens")
 }
 

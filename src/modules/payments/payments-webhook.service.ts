@@ -72,21 +72,28 @@ export class PaymentsWebhookService {
       throw error;
     }
 
-    switch (event.type) {
-      case 'payment_intent.succeeded':
-        await this.applySucceeded(event.data.object);
-        break;
-      case 'payment_intent.payment_failed':
-        await this.applyFailed(event.data.object);
-        break;
-      default:
-        this.logger.log(`Unhandled Stripe event type: ${event.type}`);
+    try {
+      switch (event.type) {
+        case 'payment_intent.succeeded':
+          await this.applySucceeded(event.data.object);
+          break;
+        case 'payment_intent.payment_failed':
+          await this.applyFailed(event.data.object);
+          break;
+        default:
+          this.logger.log(`Unhandled Stripe event type: ${event.type}`);
+      }
+    } catch (error) {
+      await this.prisma.webhookEvent.delete({
+        where: { stripeEventId: event.id },
+      });
+
+      throw error;
     }
 
     return { received: true };
   }
 
-  /** Applies the effects of a successful payment intent — reused by the webhook handler and the client-triggered sync fallback. */
   async applySucceeded(paymentIntent: Stripe.PaymentIntent): Promise<void> {
     const payment = await this.prisma.payment.findFirst({
       where: { transactionId: paymentIntent.id },
@@ -99,17 +106,26 @@ export class PaymentsWebhookService {
       return;
     }
 
-    const [, order] = await this.prisma.$transaction([
-      this.prisma.payment.update({
-        where: { id: payment.id },
+    const order = await this.prisma.$transaction(async (tx) => {
+      const { count } = await tx.payment.updateMany({
+        where: { id: payment.id, status: PaymentStatus.PENDING },
         data: { status: PaymentStatus.COMPLETED },
-      }),
-      this.prisma.order.update({
+      });
+
+      if (count !== 1) {
+        return null;
+      }
+
+      return await tx.order.update({
         where: { id: payment.orderId },
         data: { status: OrderStatus.PROCESSING },
         include: { user: true },
-      }),
-    ]);
+      });
+    });
+
+    if (!order) {
+      return;
+    }
 
     await this.emailService.sendPaymentReceiptEmail(order.user.email, {
       orderNumber: order.orderNumber,
@@ -117,7 +133,6 @@ export class PaymentsWebhookService {
     });
   }
 
-  /** Applies the effects of a failed payment intent — reused by the webhook handler and the client-triggered sync fallback. */
   async applyFailed(paymentIntent: Stripe.PaymentIntent): Promise<void> {
     const payment = await this.prisma.payment.findFirst({
       where: { transactionId: paymentIntent.id },
@@ -130,8 +145,8 @@ export class PaymentsWebhookService {
       return;
     }
 
-    await this.prisma.payment.update({
-      where: { id: payment.id },
+    await this.prisma.payment.updateMany({
+      where: { id: payment.id, status: PaymentStatus.PENDING },
       data: { status: PaymentStatus.FAILED },
     });
   }

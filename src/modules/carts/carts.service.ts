@@ -1,6 +1,5 @@
-/* eslint-disable @typescript-eslint/no-redundant-type-constituents */
 import { PrismaService } from '@/prisma/prisma.service';
-import { Cart, CartItem, Product } from '@generated/prisma/client';
+import { Cart, CartItem, Prisma, Product } from '@generated/prisma/client';
 import {
   BadRequestException,
   Injectable,
@@ -110,10 +109,28 @@ export class CartsService {
       return existing;
     }
 
-    return await this.prisma.cart.create({
-      data: { userId },
-      include: { cartItems: { include: { product: true } } },
-    });
+    try {
+      return await this.prisma.cart.create({
+        data: { userId },
+        include: { cartItems: { include: { product: true } } },
+      });
+    } catch (error) {
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === 'P2002'
+      ) {
+        const active = await this.prisma.cart.findFirst({
+          where: { userId, checkedOut: false },
+          include: { cartItems: { include: { product: true } } },
+        });
+
+        if (active) {
+          return active;
+        }
+      }
+
+      throw error;
+    }
   }
 
   private formatCart(cart: CartWithItems): CartResponseDto {
@@ -127,7 +144,8 @@ export class CartsService {
         price,
         quantity: item.quantity,
         subtotal: price * item.quantity,
-        isAvailable: item.product.isActive,
+        isAvailable:
+          item.product.isActive && item.product.stock >= item.quantity,
         createdAt: item.createdAt,
         updatedAt: item.updatedAt,
       };

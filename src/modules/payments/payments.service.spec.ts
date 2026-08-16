@@ -6,6 +6,8 @@ import { PaymentsWebhookService } from './payments-webhook.service';
 
 describe('PaymentsService', () => {
   let service: PaymentsService;
+  const originalSecretKey = process.env.STRIPE_SECRET_KEY;
+  const originalWebhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
 
   beforeEach(async () => {
     process.env.STRIPE_SECRET_KEY = 'sk_test_dummy';
@@ -21,6 +23,20 @@ describe('PaymentsService', () => {
     }).compile();
 
     service = module.get<PaymentsService>(PaymentsService);
+  });
+
+  afterEach(() => {
+    if (originalSecretKey === undefined) {
+      delete process.env.STRIPE_SECRET_KEY;
+    } else {
+      process.env.STRIPE_SECRET_KEY = originalSecretKey;
+    }
+
+    if (originalWebhookSecret === undefined) {
+      delete process.env.STRIPE_WEBHOOK_SECRET;
+    } else {
+      process.env.STRIPE_WEBHOOK_SECRET = originalWebhookSecret;
+    }
   });
 
   it('should be defined', () => {

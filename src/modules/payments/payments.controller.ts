@@ -149,6 +149,7 @@ export class PaymentsController {
 
   @Post(':id/sync')
   @ApiBearerAuth('JWT-auth')
+  @StrictThrottle()
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: 'Reconcile a payment with Stripe',

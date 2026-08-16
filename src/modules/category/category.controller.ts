@@ -29,17 +29,12 @@ import { RolesGuard } from '@/common/guards/roles.guard';
 import { Roles } from '@/common/decorators/roles.decorator';
 import { Public } from '@/common/decorators/public.decorator';
 import { GetUser } from '@/common/decorators/get-user.decorator';
-import { AuditLogService } from '@/audit-log/audit-log.service';
-import { AuditAction } from '@/audit-log/audit-log.constants';
 import { Role } from '@generated/prisma/enums';
 
 @ApiTags('Categories')
 @Controller('categories')
 export class CategoryController {
-  constructor(
-    private readonly categoryService: CategoryService,
-    private readonly auditLogService: AuditLogService,
-  ) {}
+  constructor(private readonly categoryService: CategoryService) {}
 
   @Post()
   @UseGuards(RolesGuard)
@@ -158,15 +153,9 @@ export class CategoryController {
     @GetUser('email') actorEmail: string,
     @Param('id') id: string,
   ): Promise<{ message: string }> {
-    const result = await this.categoryService.remove(id);
-
-    await this.auditLogService.record({
-      actor: { id: actorId, email: actorEmail },
-      action: AuditAction.CATEGORY_DELETED,
-      targetType: 'Category',
-      targetId: id,
+    return await this.categoryService.remove(id, {
+      id: actorId,
+      email: actorEmail,
     });
-
-    return result;
   }
 }

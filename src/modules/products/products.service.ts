@@ -13,10 +13,15 @@ import { UpdateStockDto, StockOperation } from './dto/update-stock.dto';
 import { ProductResponseDto } from './dto/product-response.dto';
 import { QueryProductDto, ProductSortBy } from './dto/query-product.dto';
 import { PaginatedProductsResponseDto } from './dto/paginated-products-response.dto';
+import { AuditLogService } from '@/audit-log/audit-log.service';
+import { AuditAction } from '@/audit-log/audit-log.constants';
 
 @Injectable()
 export class ProductsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private auditLogService: AuditLogService,
+  ) {}
 
   async create(data: CreateProductDto): Promise<ProductResponseDto> {
     const category = await this.prisma.category.findUnique({
@@ -74,13 +79,15 @@ export class ProductsService {
           ...(maxPrice !== undefined && { lte: maxPrice }),
         },
       }),
-      ...(inStock && { stock: { gt: 0 } }),
+      ...(inStock !== undefined && {
+        stock: inStock ? { gt: 0 } : { lte: 0 },
+      }),
     };
 
     const [products, total] = await Promise.all([
       this.prisma.product.findMany({
         where,
-        include: { category: true, reviews: { select: { rating: true } } },
+        include: { category: true },
         orderBy: { [sortBy]: sortOrder },
         skip: (page - 1) * limit,
         take: limit,
@@ -88,8 +95,28 @@ export class ProductsService {
       this.prisma.product.count({ where }),
     ]);
 
+    const ratings = await this.prisma.review.groupBy({
+      by: ['productId'],
+      where: { productId: { in: products.map((product) => product.id) } },
+      _avg: { rating: true },
+      _count: true,
+    });
+    const ratingsByProductId = new Map(
+      ratings.map((rating) => [rating.productId, rating]),
+    );
+
     return {
-      data: products.map((product) => this.formatProduct(product)),
+      data: products.map((product) => {
+        const rating = ratingsByProductId.get(product.id);
+
+        return this.formatProduct(
+          { ...product, reviews: [] },
+          {
+            reviewCount: rating?._count ?? 0,
+            averageRating: rating?._avg.rating ?? null,
+          },
+        );
+      }),
       meta: {
         total,
         page,
@@ -198,7 +225,10 @@ export class ProductsService {
     }
   }
 
-  async remove(id: string): Promise<{ message: string }> {
+  async remove(
+    id: string,
+    actor: { id: string; email: string },
+  ): Promise<{ message: string }> {
     const product = await this.prisma.product.findUnique({
       where: { id },
       include: {
@@ -222,7 +252,19 @@ export class ProductsService {
       );
     }
 
-    await this.prisma.product.delete({ where: { id } });
+    await this.prisma.$transaction(async (tx) => {
+      await tx.product.delete({ where: { id } });
+
+      await this.auditLogService.record(
+        {
+          actor,
+          action: AuditAction.PRODUCT_DELETED,
+          targetType: 'Product',
+          targetId: id,
+        },
+        tx,
+      );
+    });
 
     return { message: 'Product deleted successfully' };
   }
@@ -232,16 +274,16 @@ export class ProductsService {
       category: Category;
       reviews: { rating: number }[];
     },
+    ratingStats?: { reviewCount: number; averageRating: number | null },
   ): ProductResponseDto {
-    const reviewCount = product.reviews.length;
+    const reviewCount = ratingStats?.reviewCount ?? product.reviews.length;
+    const rawAverageRating =
+      ratingStats?.averageRating ??
+      (reviewCount > 0
+        ? product.reviews.reduce((sum, r) => sum + r.rating, 0) / reviewCount
+        : null);
     const averageRating =
-      reviewCount > 0
-        ? Math.round(
-            (product.reviews.reduce((sum, r) => sum + r.rating, 0) /
-              reviewCount) *
-              10,
-          ) / 10
-        : null;
+      rawAverageRating !== null ? Math.round(rawAverageRating * 10) / 10 : null;
 
     return {
       id: product.id,

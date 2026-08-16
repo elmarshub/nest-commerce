@@ -10,6 +10,3 @@ CREATE TABLE "webhook_events" (
 
 -- CreateIndex
 CREATE UNIQUE INDEX "webhook_events_stripeEventId_key" ON "webhook_events"("stripeEventId");
-
--- CreateIndex
-CREATE INDEX "webhook_events_stripeEventId_idx" ON "webhook_events"("stripeEventId");

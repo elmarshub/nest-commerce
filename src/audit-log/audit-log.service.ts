@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-redundant-type-constituents */
 import { PrismaService } from '@/prisma/prisma.service';
 import { Prisma } from '@generated/prisma/client';
 import { Injectable, Logger } from '@nestjs/common';
@@ -20,15 +19,14 @@ export class AuditLogService {
 
   constructor(private prisma: PrismaService) {}
 
-  async record({
-    actor,
-    action,
-    targetType,
-    targetId,
-    metadata,
-  }: RecordAuditLogInput): Promise<void> {
-    try {
-      await this.prisma.auditLog.create({
+  async record(
+    { actor, action, targetType, targetId, metadata }: RecordAuditLogInput,
+    tx?: Prisma.TransactionClient,
+  ): Promise<void> {
+    const client = tx ?? this.prisma;
+
+    const create = () =>
+      client.auditLog.create({
         data: {
           actorId: actor.id,
           actorEmail: actor.email,
@@ -38,6 +36,14 @@ export class AuditLogService {
           metadata: metadata as unknown as Prisma.InputJsonValue | undefined,
         },
       });
+
+    if (tx) {
+      await create();
+      return;
+    }
+
+    try {
+      await create();
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Unknown error';
       this.logger.error(`Failed to record audit log for ${action}: ${message}`);

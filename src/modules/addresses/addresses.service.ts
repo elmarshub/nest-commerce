@@ -1,6 +1,10 @@
 import { PrismaService } from '@/prisma/prisma.service';
-import { Address } from '@generated/prisma/client';
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Address, Prisma } from '@generated/prisma/client';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { CreateAddressDto } from './dto/create-address.dto';
 import { UpdateAddressDto } from './dto/update-address.dto';
 import { AddressResponseDto } from './dto/address-response.dto';
@@ -26,24 +30,39 @@ export class AddressesService {
       where: { userId },
     });
 
-    // The first address a user adds is always the default, regardless of
-    // what was passed, so there's never a state with addresses but no default.
-    const isDefault = existingCount === 0 || data.isDefault === true;
+    let isDefault = existingCount === 0 || data.isDefault === true;
 
-    const address = await this.prisma.$transaction(async (tx) => {
-      if (isDefault) {
-        await tx.address.updateMany({
-          where: { userId, isDefault: true },
-          data: { isDefault: false },
+    try {
+      const address = await this.prisma.$transaction(async (tx) => {
+        if (isDefault) {
+          await tx.address.updateMany({
+            where: { userId, isDefault: true },
+            data: { isDefault: false },
+          });
+        }
+
+        return await tx.address.create({
+          data: { ...data, userId, isDefault },
         });
+      });
+
+      return this.formatAddress(address);
+    } catch (error) {
+      if (
+        isDefault &&
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === 'P2002'
+      ) {
+        isDefault = false;
+        const address = await this.prisma.address.create({
+          data: { ...data, userId, isDefault },
+        });
+
+        return this.formatAddress(address);
       }
 
-      return await tx.address.create({
-        data: { ...data, userId, isDefault },
-      });
-    });
-
-    return this.formatAddress(address);
+      throw error;
+    }
   }
 
   async update(
@@ -51,7 +70,13 @@ export class AddressesService {
     id: string,
     data: UpdateAddressDto,
   ): Promise<AddressResponseDto> {
-    await this.getOwnedAddress(userId, id);
+    const existing = await this.getOwnedAddress(userId, id);
+
+    if (existing.isDefault && data.isDefault === false) {
+      throw new BadRequestException(
+        'Cannot unset the default address without selecting another address as the new default',
+      );
+    }
 
     const address = await this.prisma.$transaction(async (tx) => {
       if (data.isDefault === true) {
@@ -76,8 +101,6 @@ export class AddressesService {
     await this.prisma.$transaction(async (tx) => {
       await tx.address.delete({ where: { id } });
 
-      // If the default address was just deleted, promote the most recently
-      // added remaining one so the user always has a default when possible.
       if (existing.isDefault) {
         const next = await tx.address.findFirst({
           where: { userId },

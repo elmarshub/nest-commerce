@@ -10,10 +10,15 @@ import { UpdateCategoryDto } from './dto/update-category.dto';
 import { CategoryResponseDto } from './dto/category-response.dto';
 import { QueryCategoryDto } from './dto/query-category.dto';
 import { PaginatedCategoriesResponseDto } from './dto/paginated-categories-response.dto';
+import { AuditLogService } from '@/audit-log/audit-log.service';
+import { AuditAction } from '@/audit-log/audit-log.constants';
 
 @Injectable()
 export class CategoryService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private auditLogService: AuditLogService,
+  ) {}
 
   async create(data: CreateCategoryDto): Promise<CategoryResponseDto> {
     const { name, slug, ...rest } = data;
@@ -138,7 +143,10 @@ export class CategoryService {
     );
   }
 
-  async remove(id: string): Promise<{ message: string }> {
+  async remove(
+    id: string,
+    actor: { id: string; email: string },
+  ): Promise<{ message: string }> {
     const category = await this.prisma.category.findUnique({
       where: { id },
       include: { _count: { select: { products: true } } },
@@ -154,7 +162,19 @@ export class CategoryService {
       );
     }
 
-    await this.prisma.category.delete({ where: { id } });
+    await this.prisma.$transaction(async (tx) => {
+      await tx.category.delete({ where: { id } });
+
+      await this.auditLogService.record(
+        {
+          actor,
+          action: AuditAction.CATEGORY_DELETED,
+          targetType: 'Category',
+          targetId: id,
+        },
+        tx,
+      );
+    });
 
     return { message: 'Category deleted successfully' };
   }

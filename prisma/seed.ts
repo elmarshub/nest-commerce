@@ -23,7 +23,7 @@ async function main() {
     const existing = await prisma.user.findUnique({ where: { email } });
 
     if (existing) {
-      console.log(`Admin account already exists for ${email} — nothing to do`);
+      console.log('Admin account already exists nothing to do');
       return;
     }
 
@@ -39,7 +39,7 @@ async function main() {
       },
     });
 
-    console.log(`Created admin account for ${email}`);
+    console.log('Created admin account');
   } finally {
     await prisma.$disconnect();
   }

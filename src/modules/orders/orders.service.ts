@@ -40,6 +40,15 @@ export class OrdersService {
         throw new BadRequestException('Your cart is empty');
       }
 
+      const { count } = await tx.cart.updateMany({
+        where: { id: cart.id, checkedOut: false },
+        data: { checkedOut: true },
+      });
+
+      if (count !== 1) {
+        throw new BadRequestException('Your cart is empty');
+      }
+
       let totalAmount = new Prisma.Decimal(0);
       const orderItemsData: {
         productId: string;
@@ -82,11 +91,6 @@ export class OrdersService {
 
         totalAmount = totalAmount.add(product.price.mul(item.quantity));
       }
-
-      await tx.cart.update({
-        where: { id: cart.id },
-        data: { checkedOut: true },
-      });
 
       return await tx.order.create({
         data: {

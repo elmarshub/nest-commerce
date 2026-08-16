@@ -64,10 +64,7 @@ export class AuthService {
       const tokens = await this.generateTokens(user.id, user.email);
 
       await this.updateRefreshToken(user.id, tokens.refreshToken);
-      // TODO: re-enable once the frontend has a /verify-email page to send users to.
-      // Verification itself (POST /auth/verify-email, /auth/resend-verification) still works —
-      // this just stops registration from firing the email so testing isn't blocked on it.
-      // await this.sendVerificationEmail(user.id, user.email);
+      await this.sendVerificationEmail(user.id, user.email);
 
       return {
         ...tokens,
@@ -107,24 +104,29 @@ export class AuthService {
         where: { token: hashedToken },
       });
 
-    if (
-      !verificationToken ||
-      verificationToken.usedAt ||
-      verificationToken.expiresAt < new Date()
-    ) {
+    if (!verificationToken) {
       throw new BadRequestException('Invalid or expired verification token');
     }
 
-    await this.prisma.$transaction([
-      this.prisma.user.update({
+    await this.prisma.$transaction(async (tx) => {
+      const { count } = await tx.emailVerificationToken.updateMany({
+        where: {
+          id: verificationToken.id,
+          usedAt: null,
+          expiresAt: { gt: new Date() },
+        },
+        data: { usedAt: new Date() },
+      });
+
+      if (count !== 1) {
+        throw new BadRequestException('Invalid or expired verification token');
+      }
+
+      await tx.user.update({
         where: { id: verificationToken.userId },
         data: { emailVerified: true, emailVerifiedAt: new Date() },
-      }),
-      this.prisma.emailVerificationToken.update({
-        where: { id: verificationToken.id },
-        data: { usedAt: new Date() },
-      }),
-    ]);
+      });
+    });
 
     return { message: 'Email verified successfully' };
   }
@@ -271,22 +273,31 @@ export class AuthService {
       where: { token: hashedToken },
     });
 
-    if (!resetToken || resetToken.usedAt || resetToken.expiresAt < new Date()) {
+    if (!resetToken) {
       throw new BadRequestException('Invalid or expired reset token');
     }
 
     const hashedPassword = await bcrypt.hash(newPassword, this.SALT_ROUNDS);
 
-    await this.prisma.$transaction([
-      this.prisma.user.update({
+    await this.prisma.$transaction(async (tx) => {
+      const { count } = await tx.passwordResetToken.updateMany({
+        where: {
+          id: resetToken.id,
+          usedAt: null,
+          expiresAt: { gt: new Date() },
+        },
+        data: { usedAt: new Date() },
+      });
+
+      if (count !== 1) {
+        throw new BadRequestException('Invalid or expired reset token');
+      }
+
+      await tx.user.update({
         where: { id: resetToken.userId },
         data: { password: hashedPassword, refreshToken: null },
-      }),
-      this.prisma.passwordResetToken.update({
-        where: { id: resetToken.id },
-        data: { usedAt: new Date() },
-      }),
-    ]);
+      });
+    });
 
     return { message: 'Password has been reset successfully' };
   }

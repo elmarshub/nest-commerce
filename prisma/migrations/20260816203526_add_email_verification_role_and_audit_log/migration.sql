@@ -35,9 +35,6 @@ CREATE UNIQUE INDEX "email_verification_tokens_token_key" ON "email_verification
 CREATE INDEX "email_verification_tokens_userId_idx" ON "email_verification_tokens"("userId");
 
 -- CreateIndex
-CREATE INDEX "email_verification_tokens_token_idx" ON "email_verification_tokens"("token");
-
--- CreateIndex
 CREATE INDEX "audit_logs_actorId_idx" ON "audit_logs"("actorId");
 
 -- CreateIndex

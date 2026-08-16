@@ -30,17 +30,12 @@ import { RolesGuard } from '@/common/guards/roles.guard';
 import { Roles } from '@/common/decorators/roles.decorator';
 import { Public } from '@/common/decorators/public.decorator';
 import { GetUser } from '@/common/decorators/get-user.decorator';
-import { AuditLogService } from '@/audit-log/audit-log.service';
-import { AuditAction } from '@/audit-log/audit-log.constants';
 import { Role } from '@generated/prisma/enums';
 
 @ApiTags('Products')
 @Controller('products')
 export class ProductsController {
-  constructor(
-    private readonly productService: ProductsService,
-    private readonly auditLogService: AuditLogService,
-  ) {}
+  constructor(private readonly productService: ProductsService) {}
 
   @Post()
   @UseGuards(RolesGuard)
@@ -171,15 +166,9 @@ export class ProductsController {
     @GetUser('email') actorEmail: string,
     @Param('id') id: string,
   ): Promise<{ message: string }> {
-    const result = await this.productService.remove(id);
-
-    await this.auditLogService.record({
-      actor: { id: actorId, email: actorEmail },
-      action: AuditAction.PRODUCT_DELETED,
-      targetType: 'Product',
-      targetId: id,
+    return await this.productService.remove(id, {
+      id: actorId,
+      email: actorEmail,
     });
-
-    return result;
   }
 }

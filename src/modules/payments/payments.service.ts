@@ -11,6 +11,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import Stripe from 'stripe';
+import { randomUUID } from 'crypto';
 import { CreatePaymentIntentDto } from './dto/create-payment-intent.dto';
 import { PaymentApiResponseDto } from './dto/payment-api-response.dto';
 import { PaymentResponseDto } from './dto/payment-response.dto';
@@ -57,14 +58,25 @@ export class PaymentsService {
       throw new ConflictException('This order has already been paid');
     }
 
+    const currency = order.payment?.currency ?? 'usd';
+
+    const canReuseKey =
+      order.payment?.stripeIdempotencyKey &&
+      order.payment.status === PaymentStatus.PENDING &&
+      order.payment.currency === currency;
+
+    const idempotencyKey = canReuseKey
+      ? order.payment!.stripeIdempotencyKey!
+      : randomUUID();
+
     const paymentIntent = await this.stripe.paymentIntents.create(
       {
         amount: Math.round(Number(order.totalAmount) * 100),
-        currency: order.payment?.currency ?? 'usd',
+        currency,
         metadata: { orderId: order.id, userId },
         automatic_payment_methods: { enabled: true, allow_redirects: 'never' },
       },
-      { idempotencyKey: `create-intent-${order.id}` },
+      { idempotencyKey },
     );
 
     if (!paymentIntent.client_secret) {
@@ -79,10 +91,12 @@ export class PaymentsService {
         amount: order.totalAmount,
         status: PaymentStatus.PENDING,
         transactionId: paymentIntent.id,
+        stripeIdempotencyKey: idempotencyKey,
       },
       update: {
         status: PaymentStatus.PENDING,
         transactionId: paymentIntent.id,
+        stripeIdempotencyKey: idempotencyKey,
       },
     });
 
@@ -189,18 +203,30 @@ export class PaymentsService {
       );
     }
 
-    await this.stripe.refunds.create({
-      payment_intent: payment.transactionId,
-    });
+    await this.stripe.refunds.create(
+      { payment_intent: payment.transactionId },
+      { idempotencyKey: `refund-${payment.id}` },
+    );
 
     const { updated, orderUserEmail, orderNumber } =
       await this.prisma.$transaction(async (tx) => {
+        const { count } = await tx.payment.updateMany({
+          where: { id, status: PaymentStatus.COMPLETED },
+          data: { status: PaymentStatus.REFUNDED },
+        });
+
+        if (count !== 1) {
+          throw new ConflictException(
+            'This payment was already refunded or its status changed concurrently',
+          );
+        }
+
         const order = await tx.order.findUnique({
           where: { id: payment.orderId },
           include: { orderItems: true, user: true },
         });
 
-        if (order) {
+        if (order && order.status !== OrderStatus.CANCELLED) {
           for (const item of order.orderItems) {
             await tx.product.update({
               where: { id: item.productId },
@@ -214,9 +240,8 @@ export class PaymentsService {
           });
         }
 
-        const updatedPayment = await tx.payment.update({
+        const updatedPayment = await tx.payment.findUniqueOrThrow({
           where: { id },
-          data: { status: PaymentStatus.REFUNDED },
         });
 
         return {
