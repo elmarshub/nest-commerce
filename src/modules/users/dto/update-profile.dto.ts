@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsEmail, IsOptional, IsString } from 'class-validator';
+import { IsEmail, IsOptional, IsString, Length } from 'class-validator';
 
 export class UpdateProfileDto {
   @ApiProperty({
@@ -18,6 +18,7 @@ export class UpdateProfileDto {
   })
   @IsOptional()
   @IsString()
+  @Length(1, 50, { message: 'First name must be between 1 and 50 characters' })
   firstName?: string;
 
   @ApiProperty({
@@ -27,5 +28,6 @@ export class UpdateProfileDto {
   })
   @IsOptional()
   @IsString()
+  @Length(1, 50, { message: 'Last name must be between 1 and 50 characters' })
   lastName?: string;
 }

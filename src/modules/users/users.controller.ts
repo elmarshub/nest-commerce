@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unsafe-argument */
 import { JwtAuthGuard } from '@/common/decorators/guards/jwt-auth.guards';
 import {
   Body,
@@ -106,9 +105,7 @@ export class UsersController {
     @GetUser('id') userId: string,
     @Body() changePasswordDto: ChangePasswordDto,
   ): Promise<{ message: string }> {
-    await this.usersService.changePassword(userId, changePasswordDto);
-
-    return { message: 'Password changed successfully' };
+    return await this.usersService.changePassword(userId, changePasswordDto);
   }
 
   @Delete('me')

@@ -1,5 +1,7 @@
 import { PrismaService } from '@/prisma/prisma.service';
+import { Prisma } from '@generated/prisma/client';
 import {
+  BadRequestException,
   ConflictException,
   Injectable,
   NotFoundException,
@@ -11,6 +13,16 @@ import { UpdateProfileDto } from './dto/update-profile.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
 import { DeleteAccountDto } from './dto/delete-account.dto';
 
+const USER_SELECT = {
+  id: true,
+  email: true,
+  firstName: true,
+  lastName: true,
+  role: true,
+  createdAt: true,
+  updatedAt: true,
+} satisfies Prisma.UserSelect;
+
 @Injectable()
 export class UsersService {
   private readonly SALT_ROUNDS = 12;
@@ -20,16 +32,7 @@ export class UsersService {
   async findOne(userId: string): Promise<UsersResponseDto> {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
-      select: {
-        id: true,
-        email: true,
-        firstName: true,
-        lastName: true,
-        role: true,
-        createdAt: true,
-        updatedAt: true,
-        password: false,
-      },
+      select: USER_SELECT,
     });
 
     if (!user) {
@@ -55,20 +58,22 @@ export class UsersService {
       }
     }
 
-    return await this.prisma.user.update({
-      where: { id: userId },
-      data,
-      select: {
-        id: true,
-        email: true,
-        firstName: true,
-        lastName: true,
-        role: true,
-        createdAt: true,
-        updatedAt: true,
-        password: false,
-      },
-    });
+    try {
+      return await this.prisma.user.update({
+        where: { id: userId },
+        data,
+        select: USER_SELECT,
+      });
+    } catch (error) {
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === 'P2002'
+      ) {
+        throw new ConflictException('Email is already in use');
+      }
+
+      throw error;
+    }
   }
 
   async changePassword(
@@ -94,7 +99,7 @@ export class UsersService {
 
     const isSamePassword = await bcrypt.compare(newPassword, user.password);
     if (isSamePassword) {
-      throw new NotFoundException(
+      throw new BadRequestException(
         'New password must be different from the current password',
       );
     }
@@ -138,16 +143,7 @@ export class UsersService {
 
   async findAll(): Promise<UsersResponseDto[]> {
     return await this.prisma.user.findMany({
-      select: {
-        id: true,
-        email: true,
-        firstName: true,
-        lastName: true,
-        role: true,
-        createdAt: true,
-        updatedAt: true,
-        password: false,
-      },
+      select: USER_SELECT,
       orderBy: { createdAt: 'desc' },
     });
   }
