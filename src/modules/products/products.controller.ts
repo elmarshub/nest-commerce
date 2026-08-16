@@ -26,8 +26,8 @@ import { UpdateStockDto } from './dto/update-stock.dto';
 import { ProductResponseDto } from './dto/product-response.dto';
 import { QueryProductDto } from './dto/query-product.dto';
 import { PaginatedProductsResponseDto } from './dto/paginated-products-response.dto';
-import { JwtAuthGuard } from '@/common/decorators/guards/jwt-auth.guards';
-import { RolesGuard } from '@/common/decorators/guards/roles.guard';
+import { JwtAuthGuard } from '@/common/guards/jwt-auth.guard';
+import { RolesGuard } from '@/common/guards/roles.guard';
 import { Roles } from '@/common/decorators/roles.decorator';
 import { Role } from '@generated/prisma/enums';
 

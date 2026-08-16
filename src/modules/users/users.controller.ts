@@ -1,4 +1,4 @@
-import { JwtAuthGuard } from '@/common/decorators/guards/jwt-auth.guards';
+import { JwtAuthGuard } from '@/common/guards/jwt-auth.guard';
 import {
   Body,
   Controller,
@@ -20,7 +20,7 @@ import {
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
-import { RolesGuard } from '@/common/decorators/guards/roles.guard';
+import { RolesGuard } from '@/common/guards/roles.guard';
 import { Roles } from '@/common/decorators/roles.decorator';
 import { GetUser } from '@/common/decorators/get-user.decorator';
 import { Role } from '@generated/prisma/enums';

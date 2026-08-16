@@ -25,8 +25,8 @@ import { UpdateCategoryDto } from './dto/update-category.dto';
 import { CategoryResponseDto } from './dto/category-response.dto';
 import { QueryCategoryDto } from './dto/query-category.dto';
 import { PaginatedCategoriesResponseDto } from './dto/paginated-categories-response.dto';
-import { JwtAuthGuard } from '@/common/decorators/guards/jwt-auth.guards';
-import { RolesGuard } from '@/common/decorators/guards/roles.guard';
+import { JwtAuthGuard } from '@/common/guards/jwt-auth.guard';
+import { RolesGuard } from '@/common/guards/roles.guard';
 import { Roles } from '@/common/decorators/roles.decorator';
 import { Role } from '@generated/prisma/enums';
 
