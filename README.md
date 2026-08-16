@@ -1,6 +1,6 @@
 # Nest Commerce API
 
-A NestJS backend for an e-commerce platform — auth, catalog, cart, orders, Stripe payments, reviews, and admin tooling, backed by PostgreSQL via Prisma.
+Nest Commerce is a production-style e-commerce backend built with NestJS, secured with role-based access control (USER, ADMIN, DRIVER). It handles JWT authentication with email verification and password reset, a product/category catalog, cart and checkout, order lifecycle management, Stripe-powered payments with webhook reconciliation and refunds, and admin-only management endpoints — with transactional email notifications throughout via Resend.
 
 ## Stack
 
