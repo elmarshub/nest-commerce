@@ -10,6 +10,7 @@ import {
   IsUUID,
   MaxLength,
   Min,
+  ValidateIf,
 } from 'class-validator';
 
 export class CreateProductDto {
@@ -46,7 +47,7 @@ export class CreateProductDto {
     required: false,
     default: 0,
   })
-  @IsOptional()
+  @ValidateIf((o: CreateProductDto) => o.stock !== undefined)
   @IsInt()
   @Min(0)
   stock?: number;
@@ -74,7 +75,7 @@ export class CreateProductDto {
     required: false,
     default: true,
   })
-  @IsOptional()
+  @ValidateIf((o: CreateProductDto) => o.isActive !== undefined)
   @IsBoolean()
   isActive?: boolean;
 

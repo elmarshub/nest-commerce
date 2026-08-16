@@ -59,13 +59,13 @@ export class QueryProductDto {
     example: true,
     required: false,
   })
-  @Transform(({ value }) => {
-    if (value === 'true' || value === true) return value;
-    if (value === 'false' || value === false) return value;
-    return undefined;
-  })
   @IsOptional()
-  @Type(() => Boolean)
+  @Type(() => String)
+  @Transform(({ value }) => {
+    if (value === true || value === 'true') return true;
+    if (value === false || value === 'false') return false;
+    return value;
+  })
   @IsBoolean()
   isActive?: boolean;
 

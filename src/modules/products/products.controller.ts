@@ -67,25 +67,7 @@ export class ProductsController {
   @ApiResponse({
     status: 200,
     description: 'List of products with pagination',
-    schema: {
-      type: 'object',
-      properties: {
-        data: {
-          type: 'array',
-          items: { $ref: '#/components/schemas/ProductResponseDto' },
-        },
-
-        meta: {
-          type: 'object',
-          properties: {
-            total: { type: 'Number' },
-            page: { type: 'Number' },
-            limit: { type: 'Number' },
-            totalPages: { type: 'Number' },
-          },
-        },
-      },
-    },
+    type: PaginatedProductsResponseDto,
   })
   async findAll(
     @Query() queryDto: QueryProductDto,
@@ -141,20 +123,7 @@ export class ProductsController {
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({ summary: 'Update product stock (admin only)' })
   @ApiParam({ name: 'id', description: 'The product id' })
-  @ApiBody({
-    schema: {
-      type: 'object',
-      properties: {
-        quantity: {
-          type: 'number',
-          description:
-            'Stock adjustment ( positive to add, negative to subtract )',
-          example: 10,
-        },
-      },
-      required: ['quantity'],
-    },
-  })
+  @ApiBody({ type: UpdateStockDto })
   @ApiResponse({
     status: 200,
     description: 'The updated product',

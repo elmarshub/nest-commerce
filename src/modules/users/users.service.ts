@@ -145,12 +145,18 @@ export class UsersService {
     skip?: number,
     take?: number,
   ): Promise<{ users: UsersResponseDto[]; total: number }> {
+    const DEFAULT_TAKE = 20;
+    const MAX_TAKE = 100;
+
+    const sanitizedSkip = Math.max(skip ?? 0, 0);
+    const sanitizedTake = Math.min(Math.max(take ?? DEFAULT_TAKE, 1), MAX_TAKE);
+
     const [users, total] = await Promise.all([
       this.prisma.user.findMany({
         select: USER_SELECT,
-        orderBy: { createdAt: 'desc' },
-        skip,
-        take,
+        orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+        skip: sanitizedSkip,
+        take: sanitizedTake,
       }),
       this.prisma.user.count(),
     ]);

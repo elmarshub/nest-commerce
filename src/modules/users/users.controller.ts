@@ -29,6 +29,7 @@ import { UsersResponseDto } from './dto/user-response.dto';
 import { UpdateProfileDto } from './dto/update-profile.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
 import { DeleteAccountDto } from './dto/delete-account.dto';
+import { PaginatedUsersResponseDto } from './dto/paginated-users-response.dto';
 
 @ApiTags('Users')
 @ApiBearerAuth()
@@ -59,7 +60,7 @@ export class UsersController {
   @ApiResponse({
     status: 200,
     description: 'The paginated list of users',
-    type: [UsersResponseDto],
+    type: PaginatedUsersResponseDto,
   })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @ApiResponse({ status: 403, description: 'Forbidden' })

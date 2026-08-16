@@ -164,24 +164,34 @@ export class ProductsService {
       throw new NotFoundException('Product not found');
     }
 
-    const newStock =
-      operation === StockOperation.INCREMENT
-        ? product.stock + quantity
-        : operation === StockOperation.DECREMENT
-          ? product.stock - quantity
-          : quantity;
+    try {
+      const updatedProduct = await this.prisma.product.update({
+        where:
+          operation === StockOperation.DECREMENT
+            ? { id, stock: { gte: quantity } }
+            : { id },
+        data: {
+          stock:
+            operation === StockOperation.INCREMENT
+              ? { increment: quantity }
+              : operation === StockOperation.DECREMENT
+                ? { decrement: quantity }
+                : quantity,
+        },
+        include: { category: true },
+      });
 
-    if (newStock < 0) {
-      throw new BadRequestException('Resulting stock cannot be negative');
+      return this.formatProduct(updatedProduct);
+    } catch (error) {
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === 'P2025'
+      ) {
+        throw new BadRequestException('Resulting stock cannot be negative');
+      }
+
+      throw error;
     }
-
-    const updatedProduct = await this.prisma.product.update({
-      where: { id },
-      data: { stock: newStock },
-      include: { category: true },
-    });
-
-    return this.formatProduct(updatedProduct);
   }
 
   async remove(id: string): Promise<{ message: string }> {
