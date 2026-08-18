@@ -63,6 +63,11 @@ function PaymentFormInner({
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
+      <p className="text-sm text-muted-foreground">
+        Test mode — use card{" "}
+        <span className="font-mono">4242 4242 4242 4242</span>, any future
+        expiry date, and any CVC.
+      </p>
       <PaymentElement />
       <Button
         type="submit"
