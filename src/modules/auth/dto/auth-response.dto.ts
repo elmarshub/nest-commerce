@@ -1,5 +1,5 @@
-import { Role } from '@generated/prisma/enums';
 import { ApiProperty } from '@nestjs/swagger';
+import { AuthUserDto } from './auth-user.dto';
 
 export class AuthResponseDto {
   @ApiProperty({
@@ -16,19 +16,7 @@ export class AuthResponseDto {
 
   @ApiProperty({
     description: 'Authenticated user information',
-    example: {
-      id: 'user-123',
-      email: '<EMAIL>',
-      firstName: 'John',
-      lastName: 'Doe',
-      role: 'USER',
-    },
+    type: AuthUserDto,
   })
-  user!: {
-    id: string;
-    email: string;
-    firstName: string | null;
-    lastName: string | null;
-    role: Role;
-  };
+  user!: AuthUserDto;
 }

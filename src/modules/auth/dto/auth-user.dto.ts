@@ -1,7 +1,7 @@
 import { Role } from '@generated/prisma/enums';
 import { ApiProperty } from '@nestjs/swagger';
 
-export class UsersResponseDto {
+export class AuthUserDto {
   @ApiProperty({
     description: 'User ID',
     example: '550e8400-e29b-41d4-a716-446655440000',
@@ -32,20 +32,8 @@ export class UsersResponseDto {
 
   @ApiProperty({
     description: 'Users role',
-    example: 'ADMIN',
+    example: 'USER',
     enum: Role,
   })
   role!: Role;
-
-  @ApiProperty({
-    description: 'Users account creation date',
-    example: '2026-10-10T12:34:56.789Z',
-  })
-  createdAt!: Date;
-
-  @ApiProperty({
-    description: 'Last account update date',
-    example: '2026-10-10T12:34:56.789Z',
-  })
-  updatedAt!: Date;
 }

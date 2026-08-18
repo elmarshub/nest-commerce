@@ -53,6 +53,7 @@ export class OrderResponseDto {
   @ApiProperty({
     description: 'Shipment tracking number',
     example: '1Z999AA10123456784',
+    type: String,
     nullable: true,
   })
   trackingNumber!: string | null;
@@ -60,6 +61,7 @@ export class OrderResponseDto {
   @ApiProperty({
     description: 'Internal notes about the order',
     example: 'Customer requested gift wrapping',
+    type: String,
     nullable: true,
   })
   notes!: string | null;

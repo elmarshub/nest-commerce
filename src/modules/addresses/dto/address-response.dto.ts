@@ -10,6 +10,7 @@ export class AddressResponseDto {
   @ApiProperty({
     description: 'A short label to identify this address',
     example: 'Home',
+    type: String,
     nullable: true,
   })
   label!: string | null;
@@ -29,6 +30,7 @@ export class AddressResponseDto {
   @ApiProperty({
     description: 'Street address, second line',
     example: 'Apt 4B',
+    type: String,
     nullable: true,
   })
   line2!: string | null;
@@ -42,6 +44,7 @@ export class AddressResponseDto {
   @ApiProperty({
     description: 'State or province',
     example: 'IL',
+    type: String,
     nullable: true,
   })
   state!: string | null;
@@ -61,6 +64,7 @@ export class AddressResponseDto {
   @ApiProperty({
     description: 'Contact phone number for delivery',
     example: '+1-555-123-4567',
+    type: String,
     nullable: true,
   })
   phone!: string | null;

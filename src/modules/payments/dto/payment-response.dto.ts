@@ -40,6 +40,7 @@ export class PaymentResponseDto {
   @ApiProperty({
     description: 'Payment method used',
     example: 'card',
+    type: String,
     nullable: true,
   })
   paymentMethod!: string | null;
@@ -47,6 +48,7 @@ export class PaymentResponseDto {
   @ApiProperty({
     description: 'Payment provider transaction ID',
     example: 'pi_3Q9x2eKZ8f2s0h1',
+    type: String,
     nullable: true,
   })
   transactionId!: string | null;

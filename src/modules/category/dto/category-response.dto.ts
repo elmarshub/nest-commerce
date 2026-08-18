@@ -16,6 +16,7 @@ export class CategoryResponseDto {
   @ApiProperty({
     description: 'Category description',
     example: 'Phones, laptops and other electronic devices',
+    type: String,
     nullable: true,
   })
   description!: string | null;
@@ -29,6 +30,7 @@ export class CategoryResponseDto {
   @ApiProperty({
     description: 'Category image URL',
     example: 'https://example.com/images/electronics.png',
+    type: String,
     nullable: true,
   })
   imageUrl!: string | null;

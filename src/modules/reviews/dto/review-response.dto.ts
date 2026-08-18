@@ -34,6 +34,7 @@ export class ReviewResponseDto {
   @ApiProperty({
     description: 'Written review',
     example: 'Great product, works exactly as described!',
+    type: String,
     nullable: true,
   })
   comment!: string | null;

@@ -17,6 +17,7 @@ export class ProductResponseDto {
   @ApiProperty({
     description: 'Product description',
     example: 'An ergonomic wireless mouse with USB receiver',
+    type: String,
     nullable: true,
   })
   description!: string | null;
@@ -42,6 +43,7 @@ export class ProductResponseDto {
   @ApiProperty({
     description: 'Product image URL',
     example: 'https://example.com/images/wireless-mouse.png',
+    type: String,
     nullable: true,
   })
   imageUrl!: string | null;
@@ -67,6 +69,7 @@ export class ProductResponseDto {
   @ApiProperty({
     description: 'Average review rating, null if there are no reviews yet',
     example: 4.5,
+    type: Number,
     nullable: true,
   })
   averageRating!: number | null;
