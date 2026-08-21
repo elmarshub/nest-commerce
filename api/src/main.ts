@@ -72,6 +72,7 @@ async function bootstrap() {
       'Refresh-JWT-auth',
     )
     .addServer('http://localhost:3001', 'Development Server')
+    .addServer('https://nest-commerce-production-fa05.up.railway.app', 'Production Server')
     .build();
 
   const document = SwaggerModule.createDocument(app, config);
