@@ -43,6 +43,20 @@ export class CartsService {
 
     const cart = await this.getOrCreateActiveCart(userId);
 
+    const existingItem = cart.cartItems.find(
+      (item) => item.productId === productId,
+    );
+    const resultingQuantity = (existingItem?.quantity ?? 0) + quantity;
+
+    // this is a fast, friendly early check for the common case — the real,
+    // atomic enforcement still happens at checkout (orders.service.ts),
+    // since stock can still change between this check and checkout
+    if (resultingQuantity > product.stock) {
+      throw new BadRequestException(
+        `Only ${product.stock} unit(s) of "${product.name}" available`,
+      );
+    }
+
     await this.prisma.cartItem.upsert({
       where: { productId_cartId: { productId, cartId: cart.id } },
       create: { cartId: cart.id, productId, quantity },
@@ -57,7 +71,13 @@ export class CartsService {
     itemId: string,
     { quantity }: UpdateCartItemDto,
   ): Promise<CartResponseDto> {
-    await this.getOwnedCartItem(userId, itemId);
+    const item = await this.getOwnedCartItem(userId, itemId);
+
+    if (quantity > item.product.stock) {
+      throw new BadRequestException(
+        `Only ${item.product.stock} unit(s) of "${item.product.name}" available`,
+      );
+    }
 
     await this.prisma.cartItem.update({
       where: { id: itemId },
@@ -86,10 +106,10 @@ export class CartsService {
   private async getOwnedCartItem(
     userId: string,
     itemId: string,
-  ): Promise<CartItem> {
+  ): Promise<CartItem & { product: Product }> {
     const item = await this.prisma.cartItem.findUnique({
       where: { id: itemId },
-      include: { cart: true },
+      include: { cart: true, product: true },
     });
 
     if (!item || item.cart.userId !== userId || item.cart.checkedOut) {
@@ -134,16 +154,19 @@ export class CartsService {
   }
 
   private formatCart(cart: CartWithItems): CartResponseDto {
+    let totalAmount = new Prisma.Decimal(0);
+
     const items = cart.cartItems.map((item) => {
-      const price = Number(item.product.price);
+      const subtotalDecimal = item.product.price.mul(item.quantity);
+      totalAmount = totalAmount.add(subtotalDecimal);
 
       return {
         id: item.id,
         productId: item.productId,
         productName: item.product.name,
-        price,
+        price: Number(item.product.price),
         quantity: item.quantity,
-        subtotal: price * item.quantity,
+        subtotal: Number(subtotalDecimal),
         isAvailable:
           item.product.isActive && item.product.stock >= item.quantity,
         createdAt: item.createdAt,
@@ -155,7 +178,7 @@ export class CartsService {
       id: cart.id,
       items,
       itemCount: items.reduce((sum, item) => sum + item.quantity, 0),
-      totalAmount: items.reduce((sum, item) => sum + item.subtotal, 0),
+      totalAmount: Number(totalAmount),
       createdAt: cart.createdAt,
       updatedAt: cart.updatedAt,
     };

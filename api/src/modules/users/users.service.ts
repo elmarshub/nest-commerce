@@ -9,10 +9,12 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
+import { randomUUID } from 'crypto';
 import { UsersResponseDto } from './dto/user-response.dto';
 import { UpdateProfileDto } from './dto/update-profile.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
 import { DeleteAccountDto } from './dto/delete-account.dto';
+import { AuthService } from '../auth/auth.service';
 
 const USER_SELECT = {
   id: true,
@@ -28,15 +30,18 @@ const USER_SELECT = {
 export class UsersService {
   private readonly SALT_ROUNDS = 12;
 
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private authService: AuthService,
+  ) {}
 
   async findOne(userId: string): Promise<UsersResponseDto> {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
-      select: USER_SELECT,
+      select: { ...USER_SELECT, deletedAt: true },
     });
 
-    if (!user) {
+    if (!user || user.deletedAt) {
       throw new NotFoundException('User not found');
     }
 
@@ -47,9 +52,10 @@ export class UsersService {
     userId: string,
     data: UpdateProfileDto,
   ): Promise<UsersResponseDto> {
-    await this.findOne(userId);
+    const currentUser = await this.findOne(userId);
+    const isChangingEmail = !!data.email && data.email !== currentUser.email;
 
-    if (data.email) {
+    if (isChangingEmail) {
       const existingUser = await this.prisma.user.findUnique({
         where: { email: data.email },
       });
@@ -60,11 +66,19 @@ export class UsersService {
     }
 
     try {
-      return await this.prisma.user.update({
+      const updated = await this.prisma.user.update({
         where: { id: userId },
-        data,
+        data: isChangingEmail
+          ? { ...data, emailVerified: false, emailVerifiedAt: null }
+          : data,
         select: USER_SELECT,
       });
+
+      if (isChangingEmail) {
+        await this.authService.sendVerificationEmail(userId, data.email!);
+      }
+
+      return updated;
     } catch (error) {
       if (
         error instanceof Prisma.PrismaClientKnownRequestError &&
@@ -107,9 +121,13 @@ export class UsersService {
 
     const hashedPassword = await bcrypt.hash(newPassword, this.SALT_ROUNDS);
 
-    await this.prisma.user.update({
-      where: { id: userId },
-      data: { password: hashedPassword },
+    await this.prisma.$transaction(async (tx) => {
+      await tx.user.update({
+        where: { id: userId },
+        data: { password: hashedPassword },
+      });
+
+      await tx.refreshSession.deleteMany({ where: { userId } });
     });
 
     return { message: 'Password changed successfully' };
@@ -133,13 +151,32 @@ export class UsersService {
       throw new UnauthorizedException('Password is incorrect');
     }
 
-    await this.prisma.user.delete({ where: { id: userId } });
+    await this.softDeleteUser(userId);
   }
 
   async remove(userId: string): Promise<void> {
     await this.findOne(userId);
 
-    await this.prisma.user.delete({ where: { id: userId } });
+    await this.softDeleteUser(userId);
+  }
+
+  private async softDeleteUser(userId: string): Promise<void> {
+    const randomPassword = await bcrypt.hash(randomUUID(), this.SALT_ROUNDS);
+
+    await this.prisma.$transaction(async (tx) => {
+      await tx.user.update({
+        where: { id: userId },
+        data: {
+          deletedAt: new Date(),
+          email: `deleted-${userId}@deleted.invalid`,
+          firstName: null,
+          lastName: null,
+          password: randomPassword,
+        },
+      });
+
+      await tx.refreshSession.deleteMany({ where: { userId } });
+    });
   }
 
   async updateRole(
@@ -172,12 +209,13 @@ export class UsersService {
 
     const [users, total] = await Promise.all([
       this.prisma.user.findMany({
+        where: { deletedAt: null },
         select: USER_SELECT,
         orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
         skip: sanitizedSkip,
         take: sanitizedTake,
       }),
-      this.prisma.user.count(),
+      this.prisma.user.count({ where: { deletedAt: null } }),
     ]);
 
     return { users, total };

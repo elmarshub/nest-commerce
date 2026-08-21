@@ -17,6 +17,7 @@ import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
 import { VerifyEmailDto } from './dto/verify-email.dto';
 import { ResendVerificationDto } from './dto/resend-verification.dto';
+import { StrictThrottle } from '@/common/decorators/custom-throttler.decorator';
 import {
   ApiBearerAuth,
   ApiBody,
@@ -32,6 +33,7 @@ export class AuthController {
 
   //   register new user
   @Public()
+  @StrictThrottle()
   @Post('register')
   @HttpCode(201)
   @ApiOperation({
@@ -83,8 +85,11 @@ export class AuthController {
     status: 500,
     description: 'Internal server error',
   })
-  async refresh(@GetUser('id') userId: string): Promise<AuthResponseDto> {
-    return await this.authService.refreshTokens(userId);
+  async refresh(
+    @GetUser('id') userId: string,
+    @GetUser('sessionId') sessionId: string,
+  ): Promise<AuthResponseDto> {
+    return await this.authService.refreshTokens(userId, sessionId);
   }
 
   //   logout
@@ -117,6 +122,7 @@ export class AuthController {
 
   //   forgot password
   @Public()
+  @StrictThrottle()
   @Post('forgot-password')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
@@ -137,6 +143,7 @@ export class AuthController {
 
   //   reset password
   @Public()
+  @StrictThrottle()
   @Post('reset-password')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Reset password using a reset token' })
@@ -157,6 +164,7 @@ export class AuthController {
 
   //   verify email
   @Public()
+  @StrictThrottle()
   @Post('verify-email')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Verify email address using a verification token' })
@@ -174,6 +182,7 @@ export class AuthController {
 
   //   resend verification email
   @Public()
+  @StrictThrottle()
   @Post('resend-verification')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
@@ -194,6 +203,7 @@ export class AuthController {
 
   //   login
   @Public()
+  @StrictThrottle()
   @Post('login')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({

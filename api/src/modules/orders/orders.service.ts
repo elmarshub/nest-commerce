@@ -18,12 +18,15 @@ import { OrderResponseDto } from './dto/order-response.dto';
 import { QueryOrderDto } from './dto/query-order.dto';
 import { PaginatedOrdersResponseDto } from './dto/paginated-orders-response.dto';
 import { UpdateOrderDto } from './dto/update-order.dto';
+import { PaymentStatus } from '@generated/prisma/enums';
+import { PaymentsService } from '../payments/payments.service';
 
 @Injectable()
 export class OrdersService {
   constructor(
     private prisma: PrismaService,
     private emailService: EmailService,
+    private paymentsService: PaymentsService,
   ) {}
 
   async create(
@@ -196,6 +199,26 @@ export class OrdersService {
     { status, trackingNumber, notes }: UpdateOrderDto,
   ): Promise<OrderResponseDto> {
     try {
+      if (status) {
+        const existing = await this.prisma.order.findUnique({
+          where: { id },
+          select: { status: true },
+        });
+
+        if (!existing) {
+          throw new NotFoundException(`Order ${id} not found`);
+        }
+
+        if (
+          existing.status === OrderStatus.CANCELLED &&
+          status !== OrderStatus.CANCELLED
+        ) {
+          throw new BadRequestException(
+            'Cannot change the status of a cancelled order',
+          );
+        }
+      }
+
       const order = await this.prisma.order.update({
         where: { id },
         data: { status, trackingNumber, notes },
@@ -247,40 +270,57 @@ export class OrdersService {
     where: Prisma.OrderWhereInput,
     allowedStatuses: OrderStatus[],
   ): Promise<OrderResponseDto> {
-    const order = await this.prisma.$transaction(async (tx) => {
-      const existing = await tx.order.findFirst({
-        where,
-        include: { orderItems: true },
-      });
-
-      if (!existing) {
-        throw new NotFoundException('Order not found');
-      }
-
-      if (!allowedStatuses.includes(existing.status)) {
-        throw new BadRequestException(
-          `Order with status "${existing.status}" cannot be cancelled`,
-        );
-      }
-
-      for (const item of existing.orderItems) {
-        await tx.product.update({
-          where: { id: item.productId },
-          data: { stock: { increment: item.quantity } },
-        });
-      }
-
-      return await tx.order.update({
-        where: { id: existing.id },
-        data: { status: OrderStatus.CANCELLED },
-        include: {
-          orderItems: { include: { product: true } },
-          user: true,
-        },
-      });
+    const orderWithPayment = await this.prisma.order.findFirst({
+      where,
+      include: { payment: true },
     });
 
-    return this.formatOrder(order);
+    if (!orderWithPayment) {
+      throw new NotFoundException('Order not found');
+    }
+
+    if (!allowedStatuses.includes(orderWithPayment.status)) {
+      throw new BadRequestException(
+        `Order with status "${orderWithPayment.status}" cannot be cancelled`,
+      );
+    }
+
+    if (orderWithPayment.payment?.status === PaymentStatus.COMPLETED) {
+      await this.paymentsService.refund(orderWithPayment.payment.id);
+    } else {
+      await this.prisma.$transaction(async (tx) => {
+        const existing = await tx.order.findFirst({
+          where: { id: orderWithPayment.id, status: { in: allowedStatuses } },
+          include: { orderItems: true },
+        });
+
+        if (!existing) {
+          throw new BadRequestException('Order cannot be cancelled');
+        }
+
+        for (const item of existing.orderItems) {
+          await tx.product.update({
+            where: { id: item.productId },
+            data: { stock: { increment: item.quantity } },
+          });
+        }
+
+        await tx.order.update({
+          where: { id: existing.id },
+          data: { status: OrderStatus.CANCELLED },
+        });
+      });
+    }
+
+    const updated = await this.prisma.order.findUniqueOrThrow({
+      where: { id: orderWithPayment.id },
+      include: {
+        orderItems: { include: { product: true } },
+        user: true,
+      },
+    });
+
+    return this.formatOrder(updated);
   }
 
   private formatOrder(

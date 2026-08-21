@@ -12,15 +12,22 @@ import { RefreshStrategy } from './strategies/refresh.strategy';
     PassportModule.register({ defaultStrategy: 'jwt' }),
     JwtModule.registerAsync({
       inject: [ConfigService],
-      useFactory: (configService: ConfigService) => ({
-        secret: configService.get<string>('JWT_SECRET') ?? 'defaultsecret2026',
-        signOptions: {
-          expiresIn: Number(configService.get<number>('JWT_EXPIRES_IN', 900)),
-        },
-      }),
+      useFactory: (configService: ConfigService) => {
+        const secret = configService.get<string>('JWT_SECRET');
+        if (!secret) {
+          throw new Error('JWT_SECRET must be set');
+        }
+        return {
+          secret,
+          signOptions: {
+            expiresIn: Number(configService.get<number>('JWT_EXPIRES_IN', 900)),
+          },
+        };
+      },
     }),
   ],
   providers: [AuthService, JwtStrategy, RefreshStrategy],
   controllers: [AuthController],
+  exports: [AuthService],
 })
 export class AuthModule {}

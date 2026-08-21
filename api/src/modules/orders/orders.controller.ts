@@ -1,4 +1,3 @@
-import { RolesGuard } from '@/common/guards/roles.guard';
 import { Roles } from '@/common/decorators/roles.decorator';
 import { GetUser } from '@/common/decorators/get-user.decorator';
 import {
@@ -12,7 +11,6 @@ import {
   Patch,
   Post,
   Query,
-  UseGuards,
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
@@ -36,7 +34,6 @@ import { Role } from '@generated/prisma/enums';
 @ApiTags('Orders')
 @ApiBearerAuth('JWT-auth')
 @Controller('orders')
-@UseGuards(RolesGuard)
 export class OrdersController {
   constructor(private readonly orderService: OrdersService) {}
 

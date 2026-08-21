@@ -163,7 +163,34 @@ export class CategoryService {
     }
 
     await this.prisma.$transaction(async (tx) => {
-      await tx.category.delete({ where: { id } });
+      const current = await tx.category.findUnique({
+        where: { id },
+        include: { _count: { select: { products: true } } },
+      });
+
+      if (!current) {
+        throw new NotFoundException('Category not found');
+      }
+
+      if (current._count.products > 0) {
+        throw new ConflictException(
+          `Cannot delete category with ${current._count.products} products. Remove or reassign first`,
+        );
+      }
+
+      try {
+        await tx.category.delete({ where: { id } });
+      } catch (error) {
+        if (
+          error instanceof Prisma.PrismaClientKnownRequestError &&
+          error.code === 'P2003'
+        ) {
+          throw new ConflictException(
+            'Cannot delete category with existing products. Remove or reassign first',
+          );
+        }
+        throw error;
+      }
 
       await this.auditLogService.record(
         {
