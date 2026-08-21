@@ -42,9 +42,9 @@ model User {
   firstName       String?
   lastName        String?
   role            Role      @default(USER)
-  refreshToken    String?
   emailVerified   Boolean   @default(false)
   emailVerifiedAt DateTime?
+  deletedAt       DateTime?
 
   // relations
   orders                  Order[]
@@ -54,12 +54,30 @@ model User {
   reviews                 Review[]
   passwordResetTokens     PasswordResetToken[]
   emailVerificationTokens EmailVerificationToken[]
+  refreshSessions         RefreshSession[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@index([email])
   @@map("users")
+}
+
+
+model RefreshSession {
+  id     String @id @default(uuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  tokenHash              String
+  currentRefreshTokenId  String
+  previousRefreshTokenId String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@map("refresh_sessions")
 }
 
 model Product {

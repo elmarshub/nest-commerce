@@ -6,5 +6,6 @@ import { PaymentsWebhookService } from './payments-webhook.service';
 @Module({
   controllers: [PaymentsController],
   providers: [PaymentsService, PaymentsWebhookService],
+  exports: [PaymentsService],
 })
 export class PaymentsModule {}

@@ -9,7 +9,6 @@ import {
   Patch,
   Post,
   Query,
-  UseGuards,
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
@@ -26,7 +25,6 @@ import { UpdateStockDto } from './dto/update-stock.dto';
 import { ProductResponseDto } from './dto/product-response.dto';
 import { QueryProductDto } from './dto/query-product.dto';
 import { PaginatedProductsResponseDto } from './dto/paginated-products-response.dto';
-import { RolesGuard } from '@/common/guards/roles.guard';
 import { Roles } from '@/common/decorators/roles.decorator';
 import { Public } from '@/common/decorators/public.decorator';
 import { GetUser } from '@/common/decorators/get-user.decorator';
@@ -38,7 +36,6 @@ export class ProductsController {
   constructor(private readonly productService: ProductsService) {}
 
   @Post()
-  @UseGuards(RolesGuard)
   @Roles(Role.ADMIN)
   @HttpCode(HttpStatus.CREATED)
   @ApiBearerAuth('JWT-auth')
@@ -93,7 +90,6 @@ export class ProductsController {
   }
 
   @Patch(':id')
-  @UseGuards(RolesGuard)
   @Roles(Role.ADMIN)
   @HttpCode(HttpStatus.OK)
   @ApiBearerAuth('JWT-auth')
@@ -120,7 +116,6 @@ export class ProductsController {
   }
 
   @Patch(':id/stock')
-  @UseGuards(RolesGuard)
   @Roles(Role.ADMIN)
   @HttpCode(HttpStatus.OK)
   @ApiBearerAuth('JWT-auth')
@@ -147,7 +142,6 @@ export class ProductsController {
   }
 
   @Delete(':id')
-  @UseGuards(RolesGuard)
   @Roles(Role.ADMIN)
   @HttpCode(HttpStatus.OK)
   @ApiBearerAuth('JWT-auth')

@@ -34,7 +34,20 @@ async function bootstrap() {
   });
 
   // enable swagger docs
-  const config = new DocumentBuilder()
+  const productionServer: [string, string] = [
+    'https://nest-commerce-production-fa05.up.railway.app',
+    'Production Server',
+  ];
+  const developmentServer: [string, string] = [
+    'http://localhost:3001',
+    'Development Server',
+  ];
+  const servers =
+    process.env.NODE_ENV === 'production'
+      ? [productionServer, developmentServer]
+      : [developmentServer, productionServer];
+
+  let documentBuilder = new DocumentBuilder()
     .setTitle('Nest Commerce API')
     .setDescription('API documentation for Nest Commerce.')
     .setVersion('1.0')
@@ -70,13 +83,13 @@ async function bootstrap() {
         in: 'header',
       },
       'Refresh-JWT-auth',
-    )
-    // .addServer('http://localhost:3001', 'Development Server')
-    .addServer(
-      'https://nest-commerce-production-fa05.up.railway.app',
-      'Production Server',
-    )
-    .build();
+    );
+
+  for (const [url, description] of servers) {
+    documentBuilder = documentBuilder.addServer(url, description);
+  }
+
+  const config = documentBuilder.build();
 
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api/docs', app, document, {

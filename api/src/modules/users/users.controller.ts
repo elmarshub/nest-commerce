@@ -9,7 +9,6 @@ import {
   ParseIntPipe,
   Patch,
   Query,
-  UseGuards,
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
@@ -19,7 +18,6 @@ import {
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
-import { RolesGuard } from '@/common/guards/roles.guard';
 import { Roles } from '@/common/decorators/roles.decorator';
 import { GetUser } from '@/common/decorators/get-user.decorator';
 import { Role } from '@generated/prisma/enums';
@@ -35,7 +33,6 @@ import { PaginatedUsersResponseDto } from './dto/paginated-users-response.dto';
 
 @ApiTags('Users')
 @ApiBearerAuth()
-@UseGuards(RolesGuard)
 @Controller('users')
 export class UsersController {
   constructor(

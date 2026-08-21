@@ -2,18 +2,31 @@ import 'dotenv/config';
 import { PrismaClient } from '../generated/prisma/client';
 import { PrismaPg } from '@prisma/adapter-pg';
 
-// Seeds a jewelry catalog using Haven's real product photography (copied
-// into client/public/products/ — see FRONTEND.md's porting plan) and
-// product names derived from Haven's actual asset filenames. Haven's
-// catalog itself lived in Supabase's admin UI, not in its codebase, so
-// there's no canonical name/price list to copy verbatim — these are
-// reasonable names grounded in the real asset names, not invented from
-// nothing. Idempotent — upserts by slug/sku, safe to re-run.
 const CATEGORIES = [
-  { name: 'Rings', slug: 'rings', description: 'Rings for every occasion', image: 'rings-collection.png' },
-  { name: 'Necklaces', slug: 'necklaces', description: 'Necklaces and pendants', image: 'circular-collection.png' },
-  { name: 'Earrings', slug: 'earrings', description: 'Earrings, studs and hoops', image: 'earrings-collection.png' },
-  { name: 'Bracelets', slug: 'bracelets', description: 'Bracelets and bangles', image: 'link-bracelet.png' },
+  {
+    name: 'Rings',
+    slug: 'rings',
+    description: 'Rings for every occasion',
+    image: 'rings-collection.png',
+  },
+  {
+    name: 'Necklaces',
+    slug: 'necklaces',
+    description: 'Necklaces and pendants',
+    image: 'circular-collection.png',
+  },
+  {
+    name: 'Earrings',
+    slug: 'earrings',
+    description: 'Earrings, studs and hoops',
+    image: 'earrings-collection.png',
+  },
+  {
+    name: 'Bracelets',
+    slug: 'bracelets',
+    description: 'Bracelets and bangles',
+    image: 'link-bracelet.png',
+  },
 ] as const;
 
 const PRODUCTS: {
@@ -167,8 +180,6 @@ const PRODUCTS: {
   },
 ];
 
-// Served from client/public/ — a relative path resolves against the
-// Next.js app's own origin, no external host needed.
 const IMAGE_BASE = '/products';
 
 async function main() {

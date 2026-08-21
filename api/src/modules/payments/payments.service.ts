@@ -226,7 +226,12 @@ export class PaymentsService {
           include: { orderItems: true, user: true },
         });
 
-        if (order && order.status !== OrderStatus.CANCELLED) {
+        const restockableStatuses: OrderStatus[] = [
+          OrderStatus.PENDING,
+          OrderStatus.PROCESSING,
+        ];
+
+        if (order && restockableStatuses.includes(order.status)) {
           for (const item of order.orderItems) {
             await tx.product.update({
               where: { id: item.productId },

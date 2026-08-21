@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-redundant-type-constituents */
 import { PrismaService } from '@/prisma/prisma.service';
 import { Category, Prisma, Product } from '@generated/prisma/client';
 import {
@@ -253,7 +252,40 @@ export class ProductsService {
     }
 
     await this.prisma.$transaction(async (tx) => {
-      await tx.product.delete({ where: { id } });
+      const current = await tx.product.findUnique({
+        where: { id },
+        include: { _count: { select: { orderItems: true, cartItems: true } } },
+      });
+
+      if (!current) {
+        throw new NotFoundException('Product not found');
+      }
+
+      if (current._count.orderItems > 0) {
+        throw new ConflictException(
+          'Cannot delete a product that has existing orders',
+        );
+      }
+
+      if (current._count.cartItems > 0) {
+        throw new ConflictException(
+          'Cannot delete a product that is currently in a cart',
+        );
+      }
+
+      try {
+        await tx.product.delete({ where: { id } });
+      } catch (error) {
+        if (
+          error instanceof Prisma.PrismaClientKnownRequestError &&
+          error.code === 'P2003'
+        ) {
+          throw new ConflictException(
+            'Cannot delete a product that has existing orders',
+          );
+        }
+        throw error;
+      }
 
       await this.auditLogService.record(
         {

@@ -1,4 +1,3 @@
-import { RolesGuard } from '@/common/guards/roles.guard';
 import { Roles } from '@/common/decorators/roles.decorator';
 import { GetUser } from '@/common/decorators/get-user.decorator';
 import { Public } from '@/common/decorators/public.decorator';
@@ -19,7 +18,6 @@ import {
   Query,
   type RawBodyRequest,
   Req,
-  UseGuards,
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
@@ -81,7 +79,6 @@ export class PaymentsController {
   }
 
   @Get()
-  @UseGuards(RolesGuard)
   @Roles(Role.ADMIN)
   @ApiBearerAuth('JWT-auth')
   @HttpCode(HttpStatus.OK)
@@ -177,7 +174,6 @@ export class PaymentsController {
   }
 
   @Post(':id/refund')
-  @UseGuards(RolesGuard)
   @Roles(Role.ADMIN)
   @ApiBearerAuth('JWT-auth')
   @StrictThrottle()
