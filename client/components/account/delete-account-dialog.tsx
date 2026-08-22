@@ -28,18 +28,21 @@ export function DeleteAccountDialog() {
   const handleDelete = async () => {
     setSubmitting(true);
     setError(null);
-    const result = await deleteAccount(password);
-    setSubmitting(false);
+    try {
+      const result = await deleteAccount(password);
 
-    if (result.error) {
-      setError(result.error);
-      return;
+      if (result.error) {
+        setError(result.error);
+        return;
+      }
+
+      setOpen(false);
+      await signOut();
+      toast.success("Account deleted");
+      router.push("/");
+    } finally {
+      setSubmitting(false);
     }
-
-    setOpen(false);
-    await signOut();
-    toast.success("Account deleted");
-    router.push("/");
   };
 
   return (

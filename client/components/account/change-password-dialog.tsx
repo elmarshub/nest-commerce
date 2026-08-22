@@ -36,20 +36,25 @@ export function ChangePasswordDialog() {
 
   const onSubmit = async (data: ChangePasswordFormValues) => {
     setSubmitting(true);
-    const result = await changePassword({
-      currentPassword: data.currentPassword,
-      newPassword: data.newPassword,
-    });
-    setSubmitting(false);
+    try {
+      const result = await changePassword({
+        currentPassword: data.currentPassword,
+        newPassword: data.newPassword,
+      });
 
-    if (result.error) {
-      toast.error("Could not change password", { description: result.error });
-      return;
+      if (result.error) {
+        toast.error("Could not change password", {
+          description: result.error,
+        });
+        return;
+      }
+
+      toast.success("Password changed");
+      reset();
+      setOpen(false);
+    } finally {
+      setSubmitting(false);
     }
-
-    toast.success("Password changed");
-    reset();
-    setOpen(false);
   };
 
   return (

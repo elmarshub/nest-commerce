@@ -3,6 +3,9 @@ import type { WishlistItem } from "@/types/wishlist";
 
 async function fetchMyWishlist(): Promise<WishlistItem[]> {
   const response = await fetch("/api/wishlist");
+  if (!response.ok) {
+    throw new Error("Failed to load wishlist");
+  }
   const json: { data: WishlistItem[] } = await response.json();
   return json.data;
 }

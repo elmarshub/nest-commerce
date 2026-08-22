@@ -8,6 +8,7 @@ import { cn } from "@/lib/utils";
 function PasswordInput({
   className,
   ref,
+  type: _type,
   ...props
 }: React.ComponentProps<"input"> & { ref?: React.Ref<HTMLInputElement> }) {
   const [visible, setVisible] = React.useState(false);
@@ -16,15 +17,14 @@ function PasswordInput({
     <div className="relative">
       <Input
         ref={ref}
+        {...props}
         type={visible ? "text" : "password"}
         className={cn("pr-8", className)}
-        {...props}
       />
       <button
         type="button"
-        tabIndex={-1}
         onClick={() => setVisible((prev) => !prev)}
-        className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground cursor-pointer"
+        className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-sm"
         aria-label={visible ? "Hide password" : "Show password"}
       >
         {visible ? (
