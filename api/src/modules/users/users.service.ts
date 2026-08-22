@@ -23,6 +23,7 @@ const USER_SELECT = {
   lastName: true,
   avatarUrl: true,
   role: true,
+  emailVerified: true,
   createdAt: true,
   updatedAt: true,
 } satisfies Prisma.UserSelect;

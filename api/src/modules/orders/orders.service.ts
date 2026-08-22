@@ -236,6 +236,15 @@ export class OrdersService {
           status: formatted.status,
           trackingNumber: formatted.trackingNumber,
         });
+
+        if (status === OrderStatus.DELIVERED) {
+          await this.emailService.sendReviewRequestEmail(order.user.email, {
+            orderNumber: formatted.orderNumber,
+            items: formatted.items.map((item) => ({
+              productName: item.productName,
+            })),
+          });
+        }
       }
 
       return formatted;

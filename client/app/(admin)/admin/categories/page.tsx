@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { requireAuthHeaders } from "@/lib/auth/authHeaders";
 import { getAdminCategories } from "@/lib/api/admin/categories";
 
-const PAGE_SIZE = 20;
+const PAGE_SIZE = 15;
 
 interface CategoriesPageProps {
   searchParams: Promise<{ page?: string }>;

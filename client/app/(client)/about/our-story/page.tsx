@@ -1,6 +1,13 @@
+import type { Metadata } from "next";
 import { PageHeader } from "@/components/about/page-header";
 import { ContentSection } from "@/components/about/content-section";
 import { ImageTextBlock } from "@/components/about/image-text-block";
+
+export const metadata: Metadata = {
+  title: "Our Story",
+  description:
+    "A journey of passion, craftsmanship, and timeless elegance — discover the story behind Haven's handcrafted jewelry.",
+};
 
 export default function OurStoryPage() {
   return (

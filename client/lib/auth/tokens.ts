@@ -4,7 +4,7 @@ import { cookies } from "next/headers";
 export const ACCESS_TOKEN_COOKIE = "access_token";
 export const REFRESH_TOKEN_COOKIE = "refresh_token";
 
-const COOKIE_MAX_AGE_SECONDS = 60 * 60 * 24 * 30;
+const COOKIE_MAX_AGE_SECONDS = 60 * 60 * 24 * 7;
 
 export async function setAuthCookies(tokens: {
   accessToken: string;

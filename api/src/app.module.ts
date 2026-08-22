@@ -20,6 +20,7 @@ import { EmailModule } from './email/email.module';
 import { AuditLogModule } from './audit-log/audit-log.module';
 import { MetaModule } from './modules/meta/meta.module';
 import { UploadsModule } from './modules/uploads/uploads.module';
+import { WishlistModule } from './modules/wishlist/wishlist.module';
 
 @Module({
   imports: [
@@ -49,6 +50,7 @@ import { UploadsModule } from './modules/uploads/uploads.module';
     ReviewsModule,
     MetaModule,
     UploadsModule,
+    WishlistModule,
   ],
   controllers: [AppController],
   providers: [

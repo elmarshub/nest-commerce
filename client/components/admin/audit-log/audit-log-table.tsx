@@ -64,16 +64,36 @@ export function AuditLogTable({ entries }: { entries: AuditLogEntry[] }) {
                 </DialogTrigger>
                 <DialogContent className="rounded-none">
                   <DialogHeader>
-                    <DialogTitle className="font-light">Action Metadata</DialogTitle>
+                    <DialogTitle className="font-light">Action Details</DialogTitle>
                   </DialogHeader>
-                  {entry.metadata ? (
-                    <pre className="text-xs bg-muted/30 p-4 overflow-auto max-h-96">
+                  <dl className="text-sm space-y-2">
+                    <div className="flex justify-between gap-4">
+                      <dt className="text-muted-foreground">Timestamp</dt>
+                      <dd className="text-foreground text-right">
+                        {formatDate(entry.createdAt)}
+                      </dd>
+                    </div>
+                    <div className="flex justify-between gap-4">
+                      <dt className="text-muted-foreground">Actor</dt>
+                      <dd className="text-foreground text-right">{entry.actorEmail}</dd>
+                    </div>
+                    <div className="flex justify-between gap-4">
+                      <dt className="text-muted-foreground">Action</dt>
+                      <dd className="text-foreground text-right capitalize">
+                        {entry.action.toLowerCase().replaceAll("_", " ")}
+                      </dd>
+                    </div>
+                    <div className="flex justify-between gap-4">
+                      <dt className="text-muted-foreground">Target</dt>
+                      <dd className="text-foreground text-right">
+                        {entry.targetType} — {String(entry.targetId ?? "—")}
+                      </dd>
+                    </div>
+                  </dl>
+                  {entry.metadata && (
+                    <pre className="text-xs bg-muted/30 p-4 overflow-auto max-h-96 mt-2">
                       {JSON.stringify(entry.metadata, null, 2)}
                     </pre>
-                  ) : (
-                    <p className="text-sm text-muted-foreground">
-                      No additional details were recorded for this action.
-                    </p>
                   )}
                 </DialogContent>
               </Dialog>

@@ -1,6 +1,13 @@
+import type { Metadata } from "next";
 import { PageHeader } from "@/components/about/page-header";
 import { ContentSection } from "@/components/about/content-section";
 import { Button } from "@/components/ui/button";
+
+export const metadata: Metadata = {
+  title: "Size Guide",
+  description:
+    "Find your perfect fit with Haven's comprehensive ring, bracelet, and necklace sizing guide.",
+};
 
 const RING_SIZES = [
   { us: "5", uk: "J", eu: "49", diameter: "15.6", circumference: "49.0" },

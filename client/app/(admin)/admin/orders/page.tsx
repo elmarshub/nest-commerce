@@ -11,7 +11,7 @@ type OrderStatus = NonNullable<
   paths["/api/v1/orders/admin/all"]["get"]["parameters"]["query"]
 >["status"];
 
-const PAGE_SIZE = 20;
+const PAGE_SIZE = 15;
 
 interface OrdersPageProps {
   searchParams: Promise<{ page?: string; status?: string; userId?: string }>;

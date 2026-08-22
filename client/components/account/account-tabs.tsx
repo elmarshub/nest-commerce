@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -18,20 +19,28 @@ import {
   type ProfileFormValues,
 } from "@/lib/validation/account";
 import { AddressesTab } from "@/components/account/addresses-tab";
+import { ConfirmDeleteDialog } from "@/components/shared/confirm-delete-dialog";
 import { AvatarUploader } from "@/components/account/avatar-uploader";
+import { ChangePasswordDialog } from "@/components/account/change-password-dialog";
+import { DeleteAccountDialog } from "@/components/account/delete-account-dialog";
+import { CancelOrderButton } from "@/components/account/cancel-order-button";
+import { ReviewProduct } from "@/components/product/review-product";
 import { OrderStatusBadge } from "@/components/admin/order-status-badge";
 import type { CurrentUser } from "@/lib/auth/session";
 import type { Order } from "@/types/order";
 import type { Address } from "@/types/address";
+import type { Review } from "@/types/review";
 
 export function AccountTabs({
   user,
   orders,
   addresses,
+  reviews,
 }: {
   user: CurrentUser;
   orders: Order[];
   addresses: Address[];
+  reviews: Review[];
 }) {
   const router = useRouter();
   const signOut = useAuthStore((state) => state.signOut);
@@ -39,6 +48,9 @@ export function AccountTabs({
   const storeUser = useAuthStore((state) => state.user);
   const currentUser = storeUser ?? user;
   const [savingProfile, setSavingProfile] = useState(false);
+  const reviewsByProductId = new Map(
+    reviews.map((review) => [review.productId, review]),
+  );
 
   const {
     register,
@@ -191,15 +203,33 @@ export function AccountTabs({
                 Admin Dashboard
               </Button>
             )}
-            <Button
-              variant="outline"
-              onClick={handleSignOut}
-              className="rounded-none border-destructive text-destructive hover:bg-destructive hover:text-destructive-foreground"
-            >
-              <LogOut className="mr-2 h-4 w-4" />
-              Sign Out
-            </Button>
+            <ChangePasswordDialog />
+            <ConfirmDeleteDialog
+              title="Sign out?"
+              description="You'll need to sign in again to access your account."
+              confirmLabel="Sign out"
+              onConfirm={handleSignOut}
+              trigger={
+                <Button
+                  variant="outline"
+                  className="rounded-none border-destructive text-destructive hover:bg-destructive hover:text-destructive-foreground"
+                >
+                  <LogOut className="mr-2 h-4 w-4" />
+                  Sign Out
+                </Button>
+              }
+            />
           </div>
+        </div>
+
+        <div className="bg-muted/20 p-8 rounded-none">
+          <h2 className="text-lg font-light text-foreground mb-4">
+            Danger Zone
+          </h2>
+          <p className="text-sm text-muted-foreground mb-4">
+            Deleting your account is permanent and cannot be undone.
+          </p>
+          <DeleteAccountDialog />
         </div>
       </TabsContent>
 
@@ -238,6 +268,7 @@ export function AccountTabs({
                       <span className="font-medium text-foreground">
                         {formatPrice(order.totalAmount)}
                       </span>
+                      <CancelOrderButton orderId={order.id} status={order.status} />
                     </div>
                   </div>
 
@@ -255,6 +286,16 @@ export function AccountTabs({
                         <p className="font-medium text-foreground">
                           {formatPrice(item.subtotal)}
                         </p>
+                        {order.status === "DELIVERED" && (() => {
+                          const existingReview = reviewsByProductId.get(item.productId);
+                          return existingReview ? (
+                            <Button type="button" variant="outline" size="sm" asChild>
+                              <Link href={`/product/${item.productId}`}>View item</Link>
+                            </Button>
+                          ) : (
+                            <ReviewProduct productId={item.productId} compact />
+                          );
+                        })()}
                       </div>
                     ))}
                   </div>
