@@ -8,7 +8,7 @@ export function AdminHeader({
   actions?: React.ReactNode;
 }) {
   return (
-    <header className="flex items-center justify-between border-b border-border px-6 py-4">
+    <header className="sticky top-0 z-10 flex items-center justify-between border-b border-border bg-background px-6 py-4">
       <div className="flex items-center gap-3">
         <SidebarTrigger className="rounded-none" />
         <h1 className="text-xl font-light text-foreground">{title}</h1>
