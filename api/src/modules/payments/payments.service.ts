@@ -87,8 +87,11 @@ export class PaymentsService {
             unit_amount: Math.round(Number(item.price) * 100),
             product_data: {
               name: item.product.name,
+              // Stripe requires a fully-qualified URL — some seeded
+              // products store a path relative to the frontend's
+              // public/ folder instead of an absolute URL.
               images: item.product.imageUrl
-                ? [item.product.imageUrl]
+                ? [this.toAbsoluteImageUrl(item.product.imageUrl)]
                 : undefined,
               metadata: { productId: item.productId },
             },
@@ -323,6 +326,14 @@ export class PaymentsService {
         totalPages: Math.ceil(total / limit),
       },
     };
+  }
+
+  private toAbsoluteImageUrl(imageUrl: string): string {
+    if (/^https?:\/\//.test(imageUrl)) {
+      return imageUrl;
+    }
+
+    return `${this.frontendUrl}${imageUrl.startsWith('/') ? '' : '/'}${imageUrl}`;
   }
 
   private formatPayment(payment: Payment) {
