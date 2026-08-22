@@ -22,8 +22,13 @@ import { ResendVerificationDto } from './dto/resend-verification.dto';
 @Injectable()
 export class AuthService {
   private readonly SALT_ROUNDS = 12;
-  private readonly RESET_TOKEN_TTL_MS = 60 * 60 * 1000; // 1 hour
-  private readonly VERIFICATION_TOKEN_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
+  private readonly RESET_TOKEN_TTL_MS = 60 * 60 * 1000;
+  private readonly VERIFICATION_TOKEN_TTL_MS = 24 * 60 * 60 * 1000;
+  private readonly ROTATION_GRACE_MS = 10 * 1000;
+  private readonly rotationGraceCache = new Map<
+    string,
+    { result: { accessToken: string; refreshToken: string }; expiresAt: number }
+  >();
 
   constructor(
     private prisma: PrismaService,
@@ -205,39 +210,89 @@ export class AuthService {
     };
   }
 
+  private cacheRotationResult(
+    sessionId: string,
+    fromRefreshId: string,
+    result: { accessToken: string; refreshToken: string },
+  ): void {
+    const now = Date.now();
+
+    for (const [key, entry] of this.rotationGraceCache) {
+      if (entry.expiresAt <= now) {
+        this.rotationGraceCache.delete(key);
+      }
+    }
+
+    this.rotationGraceCache.set(`${sessionId}:${fromRefreshId}`, {
+      result,
+      expiresAt: now + this.ROTATION_GRACE_MS,
+    });
+  }
+
+  private getCachedRotationResult(
+    sessionId: string,
+    fromRefreshId: string,
+  ): { accessToken: string; refreshToken: string } | null {
+    const key = `${sessionId}:${fromRefreshId}`;
+    const entry = this.rotationGraceCache.get(key);
+
+    if (!entry || entry.expiresAt <= Date.now()) {
+      return null;
+    }
+
+    return entry.result;
+  }
+
   private async rotateSession(
     sessionId: string,
     userId: string,
     email: string,
+    refreshId: string,
   ): Promise<{ accessToken: string; refreshToken: string }> {
     const tokens = await this.generateTokens(userId, email, sessionId);
     const tokenHash = await bcrypt.hash(tokens.refreshToken, this.SALT_ROUNDS);
 
-    await this.prisma.$transaction(async (tx) => {
-      const session = await tx.refreshSession.findUnique({
-        where: { id: sessionId },
-        select: { currentRefreshTokenId: true },
-      });
-
-      await tx.refreshSession.update({
-        where: { id: sessionId },
-        data: {
-          tokenHash,
-          currentRefreshTokenId: tokens.refreshId,
-          previousRefreshTokenId: session?.currentRefreshTokenId,
-        },
-      });
+    const { count } = await this.prisma.refreshSession.updateMany({
+      where: { id: sessionId, currentRefreshTokenId: refreshId },
+      data: {
+        tokenHash,
+        currentRefreshTokenId: tokens.refreshId,
+        previousRefreshTokenId: refreshId,
+      },
     });
 
-    return {
-      accessToken: tokens.accessToken,
-      refreshToken: tokens.refreshToken,
-    };
+    if (count === 1) {
+      const result = {
+        accessToken: tokens.accessToken,
+        refreshToken: tokens.refreshToken,
+      };
+      this.cacheRotationResult(sessionId, refreshId, result);
+      return result;
+    }
+
+    const cached = this.getCachedRotationResult(sessionId, refreshId);
+    if (cached) {
+      return cached;
+    }
+
+    const session = await this.prisma.refreshSession.findUnique({
+      where: { id: sessionId },
+      select: { previousRefreshTokenId: true },
+    });
+
+    if (session?.previousRefreshTokenId === refreshId) {
+      throw new UnauthorizedException(
+        'This refresh token was just rotated by another request — retry with the new token',
+      );
+    }
+
+    throw new UnauthorizedException('Invalid refresh token');
   }
 
   async refreshTokens(
     userId: string,
     sessionId: string,
+    refreshId: string,
   ): Promise<AuthResponseDto> {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
@@ -255,7 +310,12 @@ export class AuthService {
       throw new UnauthorizedException('User not found');
     }
 
-    const tokens = await this.rotateSession(sessionId, user.id, user.email);
+    const tokens = await this.rotateSession(
+      sessionId,
+      user.id,
+      user.email,
+      refreshId,
+    );
 
     return {
       ...tokens,
