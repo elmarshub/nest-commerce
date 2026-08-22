@@ -16,9 +16,10 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { UserAvatar } from "@/components/ui/user-avatar";
+import { ConfirmDeleteDialog } from "@/components/shared/confirm-delete-dialog";
 import { useCartStore } from "@/lib/stores/cart-store";
 import { useAuthStore } from "@/lib/stores/auth-store";
-import { useWishlistStore } from "@/lib/stores/wishlist-store";
+import { useWishlist } from "@/lib/hooks/use-wishlist";
 import { useAuthModalStore } from "@/lib/stores/auth-modal-store";
 
 const navItems = [
@@ -50,7 +51,7 @@ export function Navigation() {
 
   const totalItems = useCartStore((state) => state.totalItems);
   const { user, signOut } = useAuthStore();
-  const wishlistItems = useWishlistStore((state) => state.items);
+  const { items: wishlistItems } = useWishlist();
   const openAuthModal = useAuthModalStore((state) => state.open);
 
   const cartCount = totalItems();
@@ -173,16 +174,24 @@ export function Navigation() {
                   </DropdownMenuItem>
                 )}
                 <DropdownMenuSeparator />
-                <DropdownMenuItem
-                  variant="destructive"
-                  onClick={async () => {
+                <ConfirmDeleteDialog
+                  title="Sign out?"
+                  description="You'll need to sign in again to access your account."
+                  confirmLabel="Sign out"
+                  onConfirm={async () => {
                     await signOut();
                     router.push("/");
                   }}
-                >
-                  <LogOut />
-                  Logout
-                </DropdownMenuItem>
+                  trigger={
+                    <DropdownMenuItem
+                      variant="destructive"
+                      onSelect={(e) => e.preventDefault()}
+                    >
+                      <LogOut />
+                      Logout
+                    </DropdownMenuItem>
+                  }
+                />
               </DropdownMenuContent>
             </DropdownMenu>
           ) : (
@@ -324,15 +333,20 @@ export function Navigation() {
                           Admin
                         </Link>
                       )}
-                      <button
-                        onClick={() => {
+                      <ConfirmDeleteDialog
+                        title="Sign out?"
+                        description="You'll need to sign in again to access your account."
+                        confirmLabel="Sign out"
+                        onConfirm={() => {
                           signOut();
                           setIsMobileMenuOpen(false);
                         }}
-                        className="text-nav-foreground hover:text-nav-hover text-sm font-light"
-                      >
-                        Sign Out
-                      </button>
+                        trigger={
+                          <button className="text-nav-foreground hover:text-nav-hover text-sm font-light">
+                            Sign Out
+                          </button>
+                        }
+                      />
                     </div>
                   ) : (
                     <button

@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { PageHeader } from "@/components/about/page-header";
 import { ContentSection } from "@/components/about/content-section";
 import { StoreMap } from "@/components/about/store-map";
@@ -26,6 +27,12 @@ const STORES = [
     services: ["Browse & Buy", "Repairs", "Gift Wrapping"],
   },
 ];
+
+export const metadata: Metadata = {
+  title: "Store Locator",
+  description:
+    "Visit Haven in person for a personalized jewelry experience — find a store near you or book a private appointment.",
+};
 
 export default function StoreLocatorPage() {
   return (

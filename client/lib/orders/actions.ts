@@ -2,10 +2,15 @@
 
 import { api } from "@/lib/api/client";
 import { getAccessToken } from "@/lib/auth/tokens";
+import { requireAuthHeaders } from "@/lib/auth/authHeaders";
 import * as cartApi from "@/lib/api/cart";
 import type { Order } from "@/types/order";
 
 type CheckoutResult =
+  | { error: null; order: Order }
+  | { error: string; order: null };
+
+type OrderResult =
   | { error: null; order: Order }
   | { error: string; order: null };
 
@@ -41,6 +46,27 @@ export async function checkout(input: {
   if (error || !data) {
     await cartApi.clearCart(accessToken);
     return { error: "Checkout failed. Please try again.", order: null };
+  }
+
+  return { error: null, order: data };
+}
+
+export async function cancelOrder(id: string): Promise<OrderResult> {
+  const { headers, error: authError } = await requireAuthHeaders();
+  if (!headers) {
+    return { error: authError, order: null };
+  }
+
+  const { data, error, response } = await api.PATCH("/api/v1/orders/{id}/cancel", {
+    params: { path: { id } },
+    headers,
+  });
+
+  if (error || !data) {
+    if (response.status === 400) {
+      return { error: "This order can no longer be cancelled.", order: null };
+    }
+    return { error: "Failed to cancel order. Please try again.", order: null };
   }
 
   return { error: null, order: data };

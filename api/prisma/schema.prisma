@@ -53,6 +53,7 @@ model User {
   payments                Payment[]
   addresses               Address[]
   reviews                 Review[]
+  wishlistItems           WishlistItem[]
   passwordResetTokens     PasswordResetToken[]
   emailVerificationTokens EmailVerificationToken[]
   refreshSessions         RefreshSession[]
@@ -94,9 +95,10 @@ model Product {
   updatedAt   DateTime @updatedAt
 
   // relations
-  orderItems OrderItem[]
-  cartItems  CartItem[]
-  reviews    Review[]
+  orderItems    OrderItem[]
+  cartItems     CartItem[]
+  reviews       Review[]
+  wishlistItems WishlistItem[]
 
   categoryId String
   category   Category @relation(fields: [categoryId], references: [id])
@@ -316,6 +318,9 @@ model Review {
   rating  Int
   comment String?
 
+  reply     String?
+  repliedAt DateTime?
+
   userId String
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -329,4 +334,21 @@ model Review {
   @@index([productId])
   @@index([userId])
   @@map("reviews")
+}
+
+model WishlistItem {
+  id String @id @default(uuid())
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  productId String
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@unique([userId, productId])
+  @@index([userId])
+  @@index([productId])
+  @@map("wishlist_items")
 }

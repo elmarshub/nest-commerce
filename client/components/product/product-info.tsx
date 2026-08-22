@@ -15,7 +15,9 @@ import {
 } from "@/components/ui/breadcrumb";
 import { Minus, Plus, Heart, Check } from "lucide-react";
 import { useCartStore } from "@/lib/stores/cart-store";
-import { useWishlistStore } from "@/lib/stores/wishlist-store";
+import { useAuthStore } from "@/lib/stores/auth-store";
+import { useAuthModalStore } from "@/lib/stores/auth-modal-store";
+import { useWishlist } from "@/lib/hooks/use-wishlist";
 import { formatPrice } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import type { Product } from "@/types/product";
@@ -26,7 +28,9 @@ export function ProductInfo({ product }: { product: Product }) {
   const [justAdded, setJustAdded] = useState(false);
 
   const addItem = useCartStore((state) => state.addItem);
-  const { isInWishlist, toggleItem } = useWishlistStore();
+  const user = useAuthStore((state) => state.user);
+  const openAuthModal = useAuthModalStore((state) => state.open);
+  const { isInWishlist, toggle } = useWishlist();
   const isWishlisted = isInWishlist(product.id);
   const inStock = product.stock > 0;
 
@@ -55,13 +59,18 @@ export function ProductInfo({ product }: { product: Product }) {
     setTimeout(() => setJustAdded(false), 2000);
   };
 
-  const handleWishlistToggle = () => {
-    toggleItem({
-      id: product.id,
-      name: product.name,
-      price: product.price,
-      imageUrl: product.imageUrl,
-    });
+  const handleWishlistToggle = async () => {
+    if (!user) {
+      openAuthModal();
+      return;
+    }
+
+    const result = await toggle(product.id);
+    if (result.error) {
+      toast.error("Something went wrong", { description: result.error });
+      return;
+    }
+
     toast.success(isWishlisted ? "Removed from favorites" : "Added to favorites", {
       description: isWishlisted
         ? `${product.name} has been removed from your favorites.`

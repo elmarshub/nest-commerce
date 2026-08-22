@@ -689,6 +689,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/reviews/mine": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get the current user's reviews */
+        get: operations["ReviewsController_findAllForUser"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/reviews/{id}": {
         parameters: {
             query?: never;
@@ -705,6 +722,24 @@ export interface paths {
         head?: never;
         /** Update your own review */
         patch: operations["ReviewsController_update"];
+        trace?: never;
+    };
+    "/api/v1/reviews/{id}/reply": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Remove Haven's reply to a review (admin only) */
+        delete: operations["ReviewsController_removeReply"];
+        options?: never;
+        head?: never;
+        /** Reply to a review as Haven (admin only) */
+        patch: operations["ReviewsController_reply"];
         trace?: never;
     };
     "/api/v1/meta/roles": {
@@ -804,6 +839,41 @@ export interface paths {
         post?: never;
         /** Delete an uploaded image (admin only) */
         delete: operations["UploadsController_deleteImage"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/wishlist": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get the current user's wishlist */
+        get: operations["WishlistController_findAll"];
+        put?: never;
+        /** Add a product to the wishlist */
+        post: operations["WishlistController_add"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/wishlist/{productId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Remove a product from the wishlist */
+        delete: operations["WishlistController_remove"];
         options?: never;
         head?: never;
         patch?: never;
@@ -1030,6 +1100,11 @@ export interface components {
              * @enum {string}
              */
             role: "USER" | "ADMIN" | "DRIVER";
+            /**
+             * @description Whether the user has verified their email address
+             * @example false
+             */
+            emailVerified: boolean;
             /**
              * Format: date-time
              * @description Users account creation date
@@ -1934,6 +2009,16 @@ export interface components {
              */
             comment: string | null;
             /**
+             * @description Haven's reply to the review
+             * @example Thanks for the feedback, we're glad you loved it!
+             */
+            reply: string | null;
+            /**
+             * @description Date the reply was posted
+             * @example 2026-10-11T09:00:00.000Z
+             */
+            repliedAt: string | null;
+            /**
              * Format: date-time
              * @description Review creation date
              * @example 2026-10-10T12:34:56.789Z
@@ -1962,6 +2047,13 @@ export interface components {
              */
             comment?: string;
         };
+        ReplyReviewDto: {
+            /**
+             * @description Haven's reply to the review
+             * @example Thanks for the feedback, we're glad you loved it!
+             */
+            reply: string;
+        };
         UploadResponseDto: {
             /**
              * @description Secure URL of the uploaded image
@@ -1980,6 +2072,51 @@ export interface components {
              * @example nest-commerce/products/abc123
              */
             publicId: string;
+        };
+        WishlistItemResponseDto: {
+            /**
+             * @description Wishlist item ID
+             * @example 550e8400-e29b-41d4-a716-446655440000
+             */
+            id: string;
+            /**
+             * @description ID of the wishlisted product
+             * @example 550e8400-e29b-41d4-a716-446655440000
+             */
+            productId: string;
+            /**
+             * @description Name of the product
+             * @example Wireless Mouse
+             */
+            productName: string;
+            /**
+             * @description Current price of the product
+             * @example 29.99
+             */
+            price: number;
+            /**
+             * @description Product image URL
+             * @example https://res.cloudinary.com/demo/image/upload/products/mouse.png
+             */
+            imageUrl: string | null;
+            /**
+             * @description Whether the product is still active/available
+             * @example true
+             */
+            isAvailable: boolean;
+            /**
+             * Format: date-time
+             * @description Wishlist item creation date
+             * @example 2026-10-10T12:34:56.789Z
+             */
+            createdAt: string;
+        };
+        AddWishlistItemDto: {
+            /**
+             * @description ID of the product to add to the wishlist
+             * @example 550e8400-e29b-41d4-a716-446655440000
+             */
+            productId: string;
         };
     };
     responses: never;
@@ -4113,6 +4250,33 @@ export interface operations {
             };
         };
     };
+    ReviewsController_findAllForUser: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The current user's reviews */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReviewResponseDto"][];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     ReviewsController_remove: {
         parameters: {
             query?: never;
@@ -4175,6 +4339,98 @@ export interface operations {
             };
             /** @description Unauthorized */
             401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Review not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    ReviewsController_removeReply: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The review id */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The review with the reply removed */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReviewResponseDto"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Admin access required */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Review not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    ReviewsController_reply: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The review id */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReplyReviewDto"];
+            };
+        };
+        responses: {
+            /** @description The review with the reply attached */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReviewResponseDto"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Admin access required */
+            403: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -4397,6 +4653,106 @@ export interface operations {
             };
             /** @description Forbidden */
             403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    WishlistController_findAll: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description List of wishlist items */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WishlistItemResponseDto"][];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    WishlistController_add: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AddWishlistItemDto"];
+            };
+        };
+        responses: {
+            /** @description The wishlist item */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WishlistItemResponseDto"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Product not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    WishlistController_remove: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The product id */
+                productId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Removed from wishlist */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Wishlist item not found */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };

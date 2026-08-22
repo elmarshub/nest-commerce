@@ -7,7 +7,7 @@ import { getAdminUsers } from "@/lib/api/admin/users";
 import { getRoles } from "@/lib/api/meta";
 import { getCurrentUser } from "@/lib/auth/session";
 
-const PAGE_SIZE = 20;
+const PAGE_SIZE = 15;
 
 interface UsersPageProps {
   searchParams: Promise<{ page?: string }>;

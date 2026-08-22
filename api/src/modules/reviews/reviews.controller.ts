@@ -1,5 +1,6 @@
 import { GetUser } from '@/common/decorators/get-user.decorator';
 import { Public } from '@/common/decorators/public.decorator';
+import { Roles } from '@/common/decorators/roles.decorator';
 import { Role } from '@generated/prisma/enums';
 import {
   Body,
@@ -24,6 +25,7 @@ import {
 import { ReviewsService } from './reviews.service';
 import { CreateReviewDto } from './dto/create-review.dto';
 import { UpdateReviewDto } from './dto/update-review.dto';
+import { ReplyReviewDto } from './dto/reply-review.dto';
 import { ReviewResponseDto } from './dto/review-response.dto';
 import { QueryReviewDto } from './dto/query-review.dto';
 import { PaginatedReviewsResponseDto } from './dto/paginated-reviews-response.dto';
@@ -83,6 +85,22 @@ export class ReviewsController {
     return await this.reviewsService.findAllForProduct(productId, queryDto);
   }
 
+  @Get('reviews/mine')
+  @ApiBearerAuth('JWT-auth')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: "Get the current user's reviews" })
+  @ApiResponse({
+    status: 200,
+    description: "The current user's reviews",
+    type: [ReviewResponseDto],
+  })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  async findAllForUser(
+    @GetUser('id') userId: string,
+  ): Promise<ReviewResponseDto[]> {
+    return await this.reviewsService.findAllForUser(userId);
+  }
+
   @Patch('reviews/:id')
   @ApiBearerAuth('JWT-auth')
   @HttpCode(HttpStatus.OK)
@@ -102,6 +120,46 @@ export class ReviewsController {
     @Body() updateReviewDto: UpdateReviewDto,
   ): Promise<ReviewResponseDto> {
     return await this.reviewsService.update(userId, id, updateReviewDto);
+  }
+
+  @Patch('reviews/:id/reply')
+  @Roles(Role.ADMIN)
+  @ApiBearerAuth('JWT-auth')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: "Reply to a review as Haven (admin only)" })
+  @ApiParam({ name: 'id', description: 'The review id' })
+  @ApiBody({ type: ReplyReviewDto })
+  @ApiResponse({
+    status: 200,
+    description: 'The review with the reply attached',
+    type: ReviewResponseDto,
+  })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 403, description: 'Admin access required' })
+  @ApiResponse({ status: 404, description: 'Review not found' })
+  async reply(
+    @Param('id') id: string,
+    @Body() replyReviewDto: ReplyReviewDto,
+  ): Promise<ReviewResponseDto> {
+    return await this.reviewsService.reply(id, replyReviewDto);
+  }
+
+  @Delete('reviews/:id/reply')
+  @Roles(Role.ADMIN)
+  @ApiBearerAuth('JWT-auth')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: "Remove Haven's reply to a review (admin only)" })
+  @ApiParam({ name: 'id', description: 'The review id' })
+  @ApiResponse({
+    status: 200,
+    description: 'The review with the reply removed',
+    type: ReviewResponseDto,
+  })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 403, description: 'Admin access required' })
+  @ApiResponse({ status: 404, description: 'Review not found' })
+  async removeReply(@Param('id') id: string): Promise<ReviewResponseDto> {
+    return await this.reviewsService.removeReply(id);
   }
 
   @Delete('reviews/:id')
