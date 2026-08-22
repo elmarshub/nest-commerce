@@ -21,6 +21,7 @@ const USER_SELECT = {
   email: true,
   firstName: true,
   lastName: true,
+  avatarUrl: true,
   role: true,
   createdAt: true,
   updatedAt: true,
