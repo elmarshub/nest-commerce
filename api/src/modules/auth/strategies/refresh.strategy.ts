@@ -8,6 +8,8 @@ import * as bcrypt from 'bcrypt';
 
 @Injectable()
 export class RefreshStrategy extends PassportStrategy(Strategy, 'jwt-refresh') {
+  private static readonly ROTATION_GRACE_MS = 10_000;
+
   constructor(
     private configService: ConfigService,
     private prisma: PrismaService,
@@ -60,27 +62,35 @@ export class RefreshStrategy extends PassportStrategy(Strategy, 'jwt-refresh') {
       throw new UnauthorizedException('Invalid refresh token');
     }
 
-    if (
+    const isCurrent = payload.refreshId === session.currentRefreshTokenId;
+    const isPreviousWithinGrace =
       session.previousRefreshTokenId &&
-      payload.refreshId === session.previousRefreshTokenId
-    ) {
-      await this.prisma.refreshSession.delete({ where: { id: session.id } });
-      throw new UnauthorizedException(
-        'Refresh token reuse detected — this session has been revoked',
-      );
-    }
+      payload.refreshId === session.previousRefreshTokenId &&
+      Date.now() - session.updatedAt.getTime() <
+        RefreshStrategy.ROTATION_GRACE_MS;
 
-    if (payload.refreshId !== session.currentRefreshTokenId) {
+    if (!isCurrent && !isPreviousWithinGrace) {
+      if (
+        session.previousRefreshTokenId &&
+        payload.refreshId === session.previousRefreshTokenId
+      ) {
+        await this.prisma.refreshSession.delete({ where: { id: session.id } });
+        throw new UnauthorizedException(
+          'Refresh token reuse detected — this session has been revoked',
+        );
+      }
       throw new UnauthorizedException('Invalid refresh token');
     }
 
-    const refreshTokenMatches = await bcrypt.compare(
-      refreshToken,
-      session.tokenHash,
-    );
+    if (isCurrent) {
+      const refreshTokenMatches = await bcrypt.compare(
+        refreshToken,
+        session.tokenHash,
+      );
 
-    if (!refreshTokenMatches) {
-      throw new UnauthorizedException();
+      if (!refreshTokenMatches) {
+        throw new UnauthorizedException();
+      }
     }
 
     return {
