@@ -1,4 +1,5 @@
 import "server-only";
+import { cache } from "react";
 import { api } from "@/lib/api/client";
 import {
   getAccessToken,
@@ -59,7 +60,7 @@ async function refreshSession(): Promise<string | null> {
   return data.accessToken;
 }
 
-export async function getCurrentUser(): Promise<CurrentUser | null> {
+export const getCurrentUser = cache(async (): Promise<CurrentUser | null> => {
   const accessToken = await getAccessToken();
   if (!accessToken) return null;
 
@@ -70,4 +71,4 @@ export async function getCurrentUser(): Promise<CurrentUser | null> {
   if (!refreshedToken) return null;
 
   return fetchMe(refreshedToken);
-}
+});
