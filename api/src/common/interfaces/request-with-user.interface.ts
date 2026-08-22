@@ -7,5 +7,6 @@ export interface RequestWithUser extends Request {
     email: string;
     role: Role;
     sessionId?: string;
+    refreshId?: string;
   };
 }

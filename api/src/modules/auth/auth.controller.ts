@@ -88,8 +88,9 @@ export class AuthController {
   async refresh(
     @GetUser('id') userId: string,
     @GetUser('sessionId') sessionId: string,
+    @GetUser('refreshId') refreshId: string,
   ): Promise<AuthResponseDto> {
-    return await this.authService.refreshTokens(userId, sessionId);
+    return await this.authService.refreshTokens(userId, sessionId, refreshId);
   }
 
   //   logout
