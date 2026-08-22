@@ -1,5 +1,8 @@
 import { notFound } from "next/navigation";
+import Link from "next/link";
+import { ArrowLeft } from "lucide-react";
 import { AdminHeader } from "@/components/admin/admin-header";
+import { Button } from "@/components/ui/button";
 import { OrderStatusForm } from "@/components/admin/orders/order-status-form";
 import { OrderStatusBadge } from "@/components/admin/order-status-badge";
 import { CancelOrderButton } from "@/components/admin/orders/cancel-order-button";
@@ -27,13 +30,25 @@ export default async function AdminOrderDetailPage({ params }: OrderDetailPagePr
   return (
     <div>
       <AdminHeader
-        title={`Order #${order.orderNumber}`}
-        actions={<CancelOrderButton orderId={order.id} />}
+        title="Order Details"
+        actions={
+          <div className="flex items-center gap-3">
+            <Button asChild variant="outline" className="rounded-none">
+              <Link href="/admin/orders">
+                <ArrowLeft className="mr-2 h-4 w-4" />
+                Back
+              </Link>
+            </Button>
+            <CancelOrderButton orderId={order.id} status={order.status} />
+          </div>
+        }
       />
       <div className="px-6 py-8 space-y-6 max-w-4xl">
         <div className="bg-muted/20 p-8 space-y-4">
           <div className="flex items-center justify-between">
-            <h2 className="text-lg font-light text-foreground">Order Details</h2>
+            <h2 className="text-lg font-light text-foreground">
+              Order #{order.orderNumber}
+            </h2>
             <OrderStatusBadge status={order.status} />
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">

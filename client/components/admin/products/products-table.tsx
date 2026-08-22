@@ -18,6 +18,7 @@ import { Button } from "@/components/ui/button";
 import { ConfirmDeleteDialog } from "@/components/shared/confirm-delete-dialog";
 import { deleteProduct } from "@/lib/admin/products/actions";
 import { formatPrice } from "@/lib/format";
+import { cn } from "@/lib/utils";
 import type { Product } from "@/types/product";
 
 export function ProductsTable({ products }: { products: Product[] }) {
@@ -82,8 +83,11 @@ export function ProductsTable({ products }: { products: Product[] }) {
             <TableCell>{product.stock}</TableCell>
             <TableCell>
               <Badge
-                variant={product.isActive ? "default" : "secondary"}
-                className="rounded-none"
+                variant="secondary"
+                className={cn(
+                  "rounded-none",
+                  product.isActive && "bg-green-100 text-green-800",
+                )}
               >
                 {product.isActive ? "Active" : "Inactive"}
               </Badge>

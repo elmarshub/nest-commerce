@@ -17,6 +17,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ConfirmDeleteDialog } from "@/components/shared/confirm-delete-dialog";
 import { deleteCategory } from "@/lib/admin/categories/actions";
+import { cn } from "@/lib/utils";
 import type { Category } from "@/types/category";
 
 export function CategoriesTable({ categories }: { categories: Category[] }) {
@@ -75,8 +76,11 @@ export function CategoriesTable({ categories }: { categories: Category[] }) {
             <TableCell>{category.productCount}</TableCell>
             <TableCell>
               <Badge
-                variant={category.isActive ? "default" : "secondary"}
-                className="rounded-none"
+                variant="secondary"
+                className={cn(
+                  "rounded-none",
+                  category.isActive && "bg-green-100 text-green-800",
+                )}
               >
                 {category.isActive ? "Active" : "Inactive"}
               </Badge>

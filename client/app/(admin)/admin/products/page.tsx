@@ -6,7 +6,7 @@ import { requireAuthHeaders } from "@/lib/auth/authHeaders";
 import { getAdminProducts } from "@/lib/api/admin/products";
 import { getCategories } from "@/lib/api/categories";
 
-const PAGE_SIZE = 20;
+const PAGE_SIZE = 15;
 
 interface ProductsPageProps {
   searchParams: Promise<{
