@@ -14,6 +14,8 @@ export default async function AccountPage() {
     getMyAddresses(),
   ]);
 
+  const loadFailed = orders === null || addresses === null;
+
   return (
     <div className="pt-16 pb-16">
       <div className="max-w-4xl mx-auto px-6">
@@ -22,7 +24,18 @@ export default async function AccountPage() {
           Manage your profile and view your order history
         </p>
 
-        <AccountTabs user={user} orders={orders.data} addresses={addresses} />
+        {loadFailed && (
+          <p className="mb-8 text-sm text-destructive">
+            We couldn&apos;t load some of your account data. Please refresh to
+            try again.
+          </p>
+        )}
+
+        <AccountTabs
+          user={user}
+          orders={orders?.data ?? []}
+          addresses={addresses ?? []}
+        />
       </div>
     </div>
   );

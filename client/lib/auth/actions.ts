@@ -1,8 +1,9 @@
 "use server";
 
 import { api } from "@/lib/api/client";
-import { setAuthCookies, clearAuthCookies, getAccessToken } from "./tokens";
+import { setAuthCookies, clearAuthCookies } from "./tokens";
 import { getCurrentUser, type CurrentUser } from "./session";
+import { requireAuthHeaders } from "./authHeaders";
 
 type AuthResult =
   | { error: null; user: CurrentUser }
@@ -45,12 +46,10 @@ export async function register(input: {
 }
 
 export async function logout(): Promise<void> {
-  const accessToken = await getAccessToken();
+  const { headers } = await requireAuthHeaders();
 
-  if (accessToken) {
-    await api.POST("/api/v1/auth/logout", {
-      headers: { Authorization: `Bearer ${accessToken}` },
-    });
+  if (headers) {
+    await api.POST("/api/v1/auth/logout", { headers });
   }
 
   await clearAuthCookies();

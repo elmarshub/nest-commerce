@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Minus, Plus, CreditCard, Loader2, ShoppingBag } from "lucide-react";
@@ -223,13 +224,14 @@ export default function CheckoutPage() {
                       exit={{ opacity: 0, x: 20 }}
                       className="flex gap-4"
                     >
-                      <div className="w-20 h-20 bg-muted rounded-none overflow-hidden">
+                      <div className="relative w-20 h-20 bg-muted rounded-none overflow-hidden">
                         {item.product.imageUrl ? (
-                          // eslint-disable-next-line @next/next/no-img-element -- remote product photography domains aren't finalized yet
-                          <img
+                          <Image
                             src={item.product.imageUrl}
                             alt={item.product.name}
-                            className="w-full h-full object-cover"
+                            fill
+                            sizes="80px"
+                            className="object-cover"
                           />
                         ) : null}
                       </div>

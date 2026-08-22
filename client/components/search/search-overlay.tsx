@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 import { Search, X, Loader2 } from "lucide-react";
 import { useDebounce } from "@/hooks/use-debounce";
@@ -91,13 +92,14 @@ export function SearchOverlay({ isOpen, onClose }: SearchOverlayProps) {
                       onClick={() => handleProductClick(product.id)}
                       className="text-left group"
                     >
-                      <div className="aspect-square mb-2 overflow-hidden bg-muted/10">
+                      <div className="relative aspect-square mb-2 overflow-hidden bg-muted/10">
                         {product.imageUrl ? (
-                          // eslint-disable-next-line @next/next/no-img-element -- remote product photography domains aren't finalized yet
-                          <img
+                          <Image
                             src={product.imageUrl}
                             alt={product.name}
-                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                            fill
+                            sizes="(min-width: 768px) 25vw, 50vw"
+                            className="object-cover group-hover:scale-105 transition-transform duration-300"
                           />
                         ) : null}
                       </div>

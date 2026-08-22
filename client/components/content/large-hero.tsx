@@ -1,14 +1,18 @@
+import Image from "next/image";
+
 const HERO_IMAGE = "/hero-image.png";
 
 export function LargeHero() {
   return (
     <section className="w-full mb-16 px-6">
-      <div className="w-full aspect-16/9 mb-3 overflow-hidden">
-        {/* eslint-disable-next-line @next/next/no-img-element -- static asset, plain img keeps this a server component */}
-        <img
+      <div className="relative w-full aspect-16/9 mb-3 overflow-hidden">
+        <Image
           src={HERO_IMAGE}
           alt="Modern jewelry collection"
-          className="w-full h-full object-cover"
+          fill
+          sizes="100vw"
+          priority
+          className="object-cover"
         />
       </div>
       <div>

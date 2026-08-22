@@ -2,6 +2,7 @@
 
 import { useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import Image from "next/image";
 import { ImageZoom } from "./image-zoom";
 
 interface ProductImageGalleryProps {
@@ -57,14 +58,15 @@ export function ProductImageGallery({ images, productName }: ProductImageGallery
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.1 }}
-              className="w-full aspect-square overflow-hidden cursor-pointer group"
+              className="relative w-full aspect-square overflow-hidden cursor-pointer group"
               onClick={() => handleImageClick(index)}
             >
-              {/* eslint-disable-next-line @next/next/no-img-element -- remote product photography domains aren't finalized yet */}
-              <img
+              <Image
                 src={image}
                 alt={`${productName} view ${index + 1}`}
-                className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                fill
+                sizes="50vw"
+                className="object-cover transition-transform duration-300 group-hover:scale-105"
               />
             </motion.div>
           ))}
@@ -80,17 +82,18 @@ export function ProductImageGallery({ images, productName }: ProductImageGallery
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.2 }}
-              className="w-full aspect-square overflow-hidden cursor-pointer group touch-pan-y"
+              className="relative w-full aspect-square overflow-hidden cursor-pointer group touch-pan-y"
               onClick={() => handleImageClick(currentImageIndex)}
               onTouchStart={handleTouchStart}
               onTouchMove={handleTouchMove}
               onTouchEnd={handleTouchEnd}
             >
-              {/* eslint-disable-next-line @next/next/no-img-element -- remote product photography domains aren't finalized yet */}
-              <img
+              <Image
                 src={productImages[currentImageIndex]}
                 alt={`${productName} view ${currentImageIndex + 1}`}
-                className="w-full h-full object-cover select-none"
+                fill
+                sizes="100vw"
+                className="object-cover select-none"
               />
             </motion.div>
           </AnimatePresence>
