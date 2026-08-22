@@ -20,7 +20,7 @@ import { RefreshStrategy } from './strategies/refresh.strategy';
         return {
           secret,
           signOptions: {
-            expiresIn: Number(configService.get<number>('JWT_EXPIRES_IN', 900)),
+            expiresIn: Number(configService.get<number>('JWT_EXPIRES_IN', 86400)),
           },
         };
       },

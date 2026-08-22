@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth/session";
 import { getMyOrders } from "@/lib/api/orders";
 import { getMyAddresses } from "@/lib/api/addresses";
+import { getMyReviews } from "@/lib/api/reviews";
 import { AccountTabs } from "@/components/account/account-tabs";
 
 export default async function AccountPage() {
@@ -11,9 +12,10 @@ export default async function AccountPage() {
   // only to satisfy TypeScript that `user` is non-null below.
   if (!user) redirect("/");
 
-  const [orders, addresses] = await Promise.all([
+  const [orders, addresses, reviews] = await Promise.all([
     getMyOrders(),
     getMyAddresses(),
+    getMyReviews(),
   ]);
 
   const loadFailed = orders === null || addresses === null;
@@ -37,6 +39,7 @@ export default async function AccountPage() {
           user={user}
           orders={orders?.data ?? []}
           addresses={addresses ?? []}
+          reviews={reviews ?? []}
         />
       </div>
     </div>

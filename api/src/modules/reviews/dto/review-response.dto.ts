@@ -40,6 +40,22 @@ export class ReviewResponseDto {
   comment!: string | null;
 
   @ApiProperty({
+    description: "Haven's reply to the review",
+    example: "Thanks for the feedback, we're glad you loved it!",
+    type: String,
+    nullable: true,
+  })
+  reply!: string | null;
+
+  @ApiProperty({
+    description: 'Date the reply was posted',
+    example: '2026-10-11T09:00:00.000Z',
+    type: String,
+    nullable: true,
+  })
+  repliedAt!: Date | null;
+
+  @ApiProperty({
     description: 'Review creation date',
     example: '2026-10-10T12:34:56.789Z',
   })

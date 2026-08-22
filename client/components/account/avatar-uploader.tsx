@@ -60,7 +60,7 @@ export function AvatarUploader({
   };
 
   return (
-    <div className="flex items-center gap-6">
+    <div className="flex flex-wrap items-center gap-4 sm:gap-6">
       <div className="relative">
         <UserAvatar email={user.email} avatarUrl={user.avatarUrl} size="lg" />
         {uploading && (

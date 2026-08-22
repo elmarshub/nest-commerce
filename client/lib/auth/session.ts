@@ -36,7 +36,7 @@ async function fetchMe(accessToken: string): Promise<CurrentUser | null> {
   };
 }
 
-async function refreshSession(): Promise<string | null> {
+export const refreshSession = cache(async (): Promise<string | null> => {
   const refreshToken = await getRefreshToken();
   if (!refreshToken) return null;
 
@@ -45,11 +45,6 @@ async function refreshSession(): Promise<string | null> {
   });
 
   if (error || !data) {
-    // Only treat this as "logged out" when the API actually rejected the
-    // refresh token. Any other failure (API down, a transient 5xx, etc.)
-    // should leave the session alone so the next request can just retry —
-    // clearing cookies here would sign the user out over a blip that had
-    // nothing to do with their token being invalid.
     if (response.status === 401 || response.status === 403) {
       await clearAuthCookies();
     }
@@ -58,7 +53,7 @@ async function refreshSession(): Promise<string | null> {
 
   await setAuthCookies(data);
   return data.accessToken;
-}
+});
 
 export const getCurrentUser = cache(async (): Promise<CurrentUser | null> => {
   const accessToken = await getAccessToken();

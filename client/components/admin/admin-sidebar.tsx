@@ -26,6 +26,7 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
 import { useAuthStore } from "@/lib/stores/auth-store";
+import { ConfirmDeleteDialog } from "@/components/shared/confirm-delete-dialog";
 import type { CurrentUser } from "@/lib/auth/session";
 
 const NAV_ITEMS = [
@@ -93,10 +94,18 @@ export function AdminSidebar({ user }: { user: CurrentUser }) {
             </SidebarMenuButton>
           </SidebarMenuItem>
           <SidebarMenuItem>
-            <SidebarMenuButton onClick={handleSignOut} className="rounded-none">
-              <LogOut />
-              <span>Sign out</span>
-            </SidebarMenuButton>
+            <ConfirmDeleteDialog
+              title="Sign out?"
+              description="You'll need to sign in again to access the admin dashboard."
+              confirmLabel="Sign out"
+              onConfirm={handleSignOut}
+              trigger={
+                <SidebarMenuButton className="rounded-none">
+                  <LogOut />
+                  <span>Sign out</span>
+                </SidebarMenuButton>
+              }
+            />
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarFooter>

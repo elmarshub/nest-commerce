@@ -8,7 +8,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
 import {
   Field,
   FieldGroup,
@@ -62,9 +62,8 @@ function ResetPasswordForm({ token }: { token: string }) {
           <FieldLabel htmlFor="newPassword" className="text-sm font-light">
             New Password
           </FieldLabel>
-          <Input
+          <PasswordInput
             id="newPassword"
-            type="password"
             {...register("newPassword")}
             className="rounded-none"
             placeholder="••••••••"
@@ -79,9 +78,8 @@ function ResetPasswordForm({ token }: { token: string }) {
           >
             Confirm New Password
           </FieldLabel>
-          <Input
+          <PasswordInput
             id="confirmPassword"
-            type="password"
             {...register("confirmPassword")}
             className="rounded-none"
             placeholder="••••••••"
