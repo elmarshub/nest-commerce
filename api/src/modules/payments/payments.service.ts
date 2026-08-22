@@ -12,8 +12,8 @@ import {
 } from '@nestjs/common';
 import Stripe from 'stripe';
 import { randomUUID } from 'crypto';
-import { CreatePaymentIntentDto } from './dto/create-payment-intent.dto';
-import { PaymentApiResponseDto } from './dto/payment-api-response.dto';
+import { CreateCheckoutSessionDto } from './dto/create-checkout-session.dto';
+import { CheckoutSessionResponseDto } from './dto/checkout-session-response.dto';
 import { PaymentResponseDto } from './dto/payment-response.dto';
 import { QueryPaymentDto } from './dto/query-payment.dto';
 import { PaginatedPaymentsResponseDto } from './dto/paginated-payments-response.dto';
@@ -22,6 +22,7 @@ import { PaymentsWebhookService } from './payments-webhook.service';
 @Injectable()
 export class PaymentsService {
   private readonly stripe: Stripe;
+  private readonly frontendUrl: string;
 
   constructor(
     private prisma: PrismaService,
@@ -35,15 +36,20 @@ export class PaymentsService {
     }
 
     this.stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+    this.frontendUrl = process.env.FRONTEND_URL ?? 'http://localhost:3000';
   }
 
-  async createIntent(
+  async createCheckoutSession(
     userId: string,
-    { orderId }: CreatePaymentIntentDto,
-  ): Promise<PaymentApiResponseDto> {
+    { orderId }: CreateCheckoutSessionDto,
+  ): Promise<CheckoutSessionResponseDto> {
     const order = await this.prisma.order.findUnique({
       where: { id: orderId },
-      include: { payment: true },
+      include: {
+        payment: true,
+        user: true,
+        orderItems: { include: { product: true } },
+      },
     });
 
     if (!order) {
@@ -69,18 +75,36 @@ export class PaymentsService {
       ? order.payment!.stripeIdempotencyKey!
       : randomUUID();
 
-    const paymentIntent = await this.stripe.paymentIntents.create(
+    const session = await this.stripe.checkout.sessions.create(
       {
-        amount: Math.round(Number(order.totalAmount) * 100),
-        currency,
+        mode: 'payment',
+        client_reference_id: order.id,
+        customer_email: order.user.email,
+        line_items: order.orderItems.map((item) => ({
+          quantity: item.quantity,
+          price_data: {
+            currency,
+            unit_amount: Math.round(Number(item.price) * 100),
+            product_data: {
+              name: item.product.name,
+              images: item.product.imageUrl
+                ? [item.product.imageUrl]
+                : undefined,
+              metadata: { productId: item.productId },
+            },
+          },
+        })),
         metadata: { orderId: order.id, userId },
-        automatic_payment_methods: { enabled: true, allow_redirects: 'never' },
+        success_url: `${this.frontendUrl}/order-success?orderId=${order.id}`,
+        cancel_url: `${this.frontendUrl}/checkout?payment=cancelled`,
       },
       { idempotencyKey },
     );
 
-    if (!paymentIntent.client_secret) {
-      throw new InternalServerErrorException('Failed to create payment intent');
+    if (!session.url) {
+      throw new InternalServerErrorException(
+        'Failed to create checkout session',
+      );
     }
 
     const payment = await this.prisma.payment.upsert({
@@ -90,18 +114,18 @@ export class PaymentsService {
         userId,
         amount: order.totalAmount,
         status: PaymentStatus.PENDING,
-        transactionId: paymentIntent.id,
+        transactionId: session.id,
         stripeIdempotencyKey: idempotencyKey,
       },
       update: {
         status: PaymentStatus.PENDING,
-        transactionId: paymentIntent.id,
+        transactionId: session.id,
         stripeIdempotencyKey: idempotencyKey,
       },
     });
 
     return {
-      clientSecret: paymentIntent.client_secret,
+      url: session.url,
       payment: this.formatPayment(payment),
     };
   }
@@ -167,14 +191,20 @@ export class PaymentsService {
       return this.formatPayment(payment);
     }
 
-    const paymentIntent = await this.stripe.paymentIntents.retrieve(
+    const session = await this.stripe.checkout.sessions.retrieve(
       payment.transactionId,
     );
 
-    if (paymentIntent.status === 'succeeded') {
-      await this.paymentsWebhookService.applySucceeded(paymentIntent);
-    } else if (paymentIntent.status === 'canceled') {
-      await this.paymentsWebhookService.applyFailed(paymentIntent);
+    if (
+      session.payment_status === 'paid' &&
+      typeof session.payment_intent === 'string'
+    ) {
+      await this.paymentsWebhookService.applySucceeded(
+        session.id,
+        session.payment_intent,
+      );
+    } else if (session.status === 'expired') {
+      await this.paymentsWebhookService.applyFailed(session.id);
     }
 
     const refreshed = await this.prisma.payment.findUniqueOrThrow({

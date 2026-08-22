@@ -7,6 +7,8 @@ import { AccountTabs } from "@/components/account/account-tabs";
 export default async function AccountPage() {
   const user = await getCurrentUser();
 
+  // AccountLayout already redirects guests before this renders; this is
+  // only to satisfy TypeScript that `user` is non-null below.
   if (!user) redirect("/");
 
   const [orders, addresses] = await Promise.all([

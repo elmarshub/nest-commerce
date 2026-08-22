@@ -1,8 +1,10 @@
 import Link from "next/link";
-import { Check, Package, MapPin } from "lucide-react";
+import { Check, Package, MapPin, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { getOrder } from "@/lib/api/orders";
+import { reconcilePaymentForOrder } from "@/lib/payments/actions";
 import { formatPrice } from "@/lib/format";
+import { ClearCartOnSuccess } from "@/components/checkout/clear-cart-on-success";
 
 interface OrderSuccessPageProps {
   searchParams: Promise<{ orderId?: string }>;
@@ -10,6 +12,10 @@ interface OrderSuccessPageProps {
 
 export default async function OrderSuccessPage({ searchParams }: OrderSuccessPageProps) {
   const { orderId } = await searchParams;
+
+  // Stripe's webhook can't reach a local dev server — reconcile the
+  // payment directly against Stripe before rendering (see lib/payments/actions.ts).
+  const payment = orderId ? await reconcilePaymentForOrder(orderId) : null;
   const order = orderId ? await getOrder(orderId) : null;
 
   if (!order) {
@@ -28,16 +34,30 @@ export default async function OrderSuccessPage({ searchParams }: OrderSuccessPag
     );
   }
 
+  const paymentPending = payment?.status === "PENDING";
+
   return (
     <div className="pt-16 pb-12">
       <div className="max-w-lg mx-auto px-6">
+        {!paymentPending && <ClearCartOnSuccess />}
+
         <div className="w-20 h-20 bg-primary rounded-full flex items-center justify-center mx-auto mb-8">
-          <Check className="h-10 w-10 text-primary-foreground" />
+          {paymentPending ? (
+            <Clock className="h-10 w-10 text-primary-foreground" />
+          ) : (
+            <Check className="h-10 w-10 text-primary-foreground" />
+          )}
         </div>
 
         <div className="text-center mb-10">
-          <h1 className="text-3xl font-light text-foreground mb-3">Thank You!</h1>
-          <p className="text-muted-foreground">Your order has been placed.</p>
+          <h1 className="text-3xl font-light text-foreground mb-3">
+            {paymentPending ? "Almost there" : "Thank You!"}
+          </h1>
+          <p className="text-muted-foreground">
+            {paymentPending
+              ? "We're still confirming your payment with Stripe — this page will reflect it shortly. Refresh in a moment if it doesn't."
+              : "Your order has been placed."}
+          </p>
         </div>
 
         <div className="bg-muted/20 p-8 rounded-none space-y-6">

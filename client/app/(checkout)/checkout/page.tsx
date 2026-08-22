@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -15,13 +15,12 @@ import { useCartStore } from "@/lib/stores/cart-store";
 import { useAuthStore } from "@/lib/stores/auth-store";
 import { useAuthModalStore } from "@/lib/stores/auth-modal-store";
 import { checkout } from "@/lib/orders/actions";
-import { createPaymentIntent } from "@/lib/payments/actions";
+import { createCheckoutSession } from "@/lib/payments/actions";
 import { useMyAddresses } from "@/lib/queries/addresses";
 import {
   addressSchema,
   type AddressFormValues,
 } from "@/lib/validation/address";
-import { PaymentForm } from "@/components/checkout/payment-form";
 import { formatPrice } from "@/lib/format";
 import type { Address } from "@/types/address";
 
@@ -63,27 +62,28 @@ function serializeAddress(address: AddressFormValues) {
     .join("\n");
 }
 
-interface PaymentStep {
-  clientSecret: string;
-  paymentId: string;
-  orderId: string;
-}
-
 export default function CheckoutPage() {
   const router = useRouter();
-  const { items, updateQuantity, removeItem, subtotal, clearCart } =
-    useCartStore();
+  const searchParams = useSearchParams();
+  const { items, updateQuantity, removeItem, subtotal } = useCartStore();
   const user = useAuthStore((state) => state.user);
   const openAuthModal = useAuthModalStore((state) => state.open);
 
   const [isProcessing, setIsProcessing] = useState(false);
-  const [paymentStep, setPaymentStep] = useState<PaymentStep | null>(null);
-  const [orderedItems, setOrderedItems] = useState<typeof items>([]);
-  const [orderedTotal, setOrderedTotal] = useState(0);
+  const [isRedirecting, setIsRedirecting] = useState(false);
   const [selectedAddressId, setSelectedAddressId] = useState<
     string | "new" | null
   >(null);
   const hasAutoFilledRef = useRef(false);
+
+  useEffect(() => {
+    if (searchParams.get("payment") === "cancelled") {
+      toast.info("Payment cancelled", {
+        description: "Your cart is still here whenever you're ready.",
+      });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const addressesQuery = useMyAddresses(!!user);
   const savedAddresses = addressesQuery.data ?? [];
@@ -119,8 +119,8 @@ export default function CheckoutPage() {
     if (match) reset(toFormValues(match));
   };
 
-  const displayItems = paymentStep ? orderedItems : items;
-  const total = paymentStep ? orderedTotal : subtotal();
+  const displayItems = items;
+  const total = subtotal();
 
   const handlePlaceOrder = async () => {
     if (items.length === 0) {
@@ -164,27 +164,21 @@ export default function CheckoutPage() {
     }
 
     const order = orderResult.order;
-    const intentResult = await createPaymentIntent(order.id);
+    const sessionResult = await createCheckoutSession(order.id);
 
-    setIsProcessing(false);
-
-    if (!intentResult.clientSecret) {
+    if (!sessionResult.url) {
+      setIsProcessing(false);
       toast.error("Order placed, but payment couldn't start", {
-        description: intentResult.error ?? undefined,
+        description: sessionResult.error ?? undefined,
       });
       return;
     }
 
-    setOrderedItems(items);
-    setOrderedTotal(total);
-    setPaymentStep({
-      clientSecret: intentResult.clientSecret,
-      paymentId: intentResult.paymentId,
-      orderId: order.id,
-    });
+    setIsRedirecting(true);
+    window.location.href = sessionResult.url;
   };
 
-  if (items.length === 0 && !paymentStep) {
+  if (items.length === 0 && !isRedirecting) {
     return (
       <div className="pt-24 pb-12">
         <div className="max-w-7xl mx-auto px-6 text-center">
@@ -240,7 +234,7 @@ export default function CheckoutPage() {
                           {item.product.name}
                         </h3>
 
-                        {!paymentStep && (
+                        {!isRedirecting && (
                           <div className="flex items-center gap-2 mt-2">
                             <Button
                               type="button"
@@ -304,18 +298,19 @@ export default function CheckoutPage() {
           </div>
 
           <div className="lg:col-span-2 lg:order-1 space-y-8">
-            {paymentStep ? (
-              <div className="bg-muted/20 p-8 rounded-none">
-                <h2 className="text-lg font-light text-foreground mb-6 flex items-center gap-2">
-                  <CreditCard className="h-5 w-5" />
-                  Payment
-                </h2>
-                <PaymentForm
-                  clientSecret={paymentStep.clientSecret}
-                  paymentId={paymentStep.paymentId}
-                  orderId={paymentStep.orderId}
-                  onPaid={clearCart}
-                />
+            {isRedirecting ? (
+              <div className="bg-muted/20 p-8 rounded-none flex flex-col items-center text-center gap-4">
+                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                <div>
+                  <h2 className="text-lg font-light text-foreground mb-2 flex items-center justify-center gap-2">
+                    <CreditCard className="h-5 w-5" />
+                    Redirecting to secure checkout
+                  </h2>
+                  <p className="text-sm text-muted-foreground">
+                    You&apos;ll be taken to Stripe to complete your payment,
+                    then brought back here to confirm your order.
+                  </p>
+                </div>
               </div>
             ) : (
               <>

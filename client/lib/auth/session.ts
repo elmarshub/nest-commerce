@@ -12,6 +12,7 @@ export type CurrentUser = {
   email: string;
   firstName: string | null;
   lastName: string | null;
+  avatarUrl: string | null;
   role: "USER" | "ADMIN" | "DRIVER";
 };
 
@@ -29,6 +30,7 @@ async function fetchMe(accessToken: string): Promise<CurrentUser | null> {
     email: data.email,
     firstName: data.firstName,
     lastName: data.lastName,
+    avatarUrl: data.avatarUrl,
     role: data.role,
   };
 }
