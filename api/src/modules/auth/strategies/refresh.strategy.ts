@@ -8,8 +8,6 @@ import * as bcrypt from 'bcrypt';
 
 @Injectable()
 export class RefreshStrategy extends PassportStrategy(Strategy, 'jwt-refresh') {
-  private static readonly ROTATION_GRACE_MS = 10_000;
-
   constructor(
     private configService: ConfigService,
     private prisma: PrismaService,
@@ -62,35 +60,27 @@ export class RefreshStrategy extends PassportStrategy(Strategy, 'jwt-refresh') {
       throw new UnauthorizedException('Invalid refresh token');
     }
 
-    const isCurrent = payload.refreshId === session.currentRefreshTokenId;
-    const isPreviousWithinGrace =
+    if (
       session.previousRefreshTokenId &&
-      payload.refreshId === session.previousRefreshTokenId &&
-      Date.now() - session.updatedAt.getTime() <
-        RefreshStrategy.ROTATION_GRACE_MS;
+      payload.refreshId === session.previousRefreshTokenId
+    ) {
+      await this.prisma.refreshSession.delete({ where: { id: session.id } });
+      throw new UnauthorizedException(
+        'Refresh token reuse detected — this session has been revoked',
+      );
+    }
 
-    if (!isCurrent && !isPreviousWithinGrace) {
-      if (
-        session.previousRefreshTokenId &&
-        payload.refreshId === session.previousRefreshTokenId
-      ) {
-        await this.prisma.refreshSession.delete({ where: { id: session.id } });
-        throw new UnauthorizedException(
-          'Refresh token reuse detected — this session has been revoked',
-        );
-      }
+    if (payload.refreshId !== session.currentRefreshTokenId) {
       throw new UnauthorizedException('Invalid refresh token');
     }
 
-    if (isCurrent) {
-      const refreshTokenMatches = await bcrypt.compare(
-        refreshToken,
-        session.tokenHash,
-      );
+    const refreshTokenMatches = await bcrypt.compare(
+      refreshToken,
+      session.tokenHash,
+    );
 
-      if (!refreshTokenMatches) {
-        throw new UnauthorizedException();
-      }
+    if (!refreshTokenMatches) {
+      throw new UnauthorizedException();
     }
 
     return {
@@ -98,6 +88,7 @@ export class RefreshStrategy extends PassportStrategy(Strategy, 'jwt-refresh') {
       email: user.email,
       role: user.role,
       sessionId: session.id,
+      refreshId: payload.refreshId,
     };
   }
 }
