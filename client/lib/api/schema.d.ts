@@ -462,7 +462,7 @@ export interface paths {
         patch: operations["OrdersController_cancel"];
         trace?: never;
     };
-    "/api/v1/payments/create-intent": {
+    "/api/v1/payments/create-checkout-session": {
         parameters: {
             query?: never;
             header?: never;
@@ -472,10 +472,10 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * Create a payment intent for an order
-         * @description Creates a Stripe PaymentIntent for the given order and returns the client secret needed to confirm payment on the frontend
+         * Create a Stripe Checkout session for an order
+         * @description Creates a Stripe Checkout session for the given order, with line items built from the order contents (product name, image, price), and returns the hosted Checkout URL to redirect the browser to
          */
-        post: operations["PaymentsController_createIntent"];
+        post: operations["PaymentsController_createCheckoutSession"];
         delete?: never;
         options?: never;
         head?: never;
@@ -741,6 +741,74 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/uploads/avatar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Upload the current user avatar image */
+        post: operations["UploadsController_uploadAvatar"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/uploads/product-image": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Upload a product image (admin only) */
+        post: operations["UploadsController_uploadProductImage"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/uploads/category-image": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Upload a category image (admin only) */
+        post: operations["UploadsController_uploadCategoryImage"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/uploads": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Delete an uploaded image (admin only) */
+        delete: operations["UploadsController_deleteImage"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -860,6 +928,11 @@ export interface components {
              */
             lastName: string | null;
             /**
+             * @description User avatar image URL
+             * @example https://res.cloudinary.com/demo/image/upload/avatars/user.png
+             */
+            avatarUrl: string | null;
+            /**
              * @description Users role
              * @example USER
              * @enum {string}
@@ -947,6 +1020,11 @@ export interface components {
              */
             lastName: string | null;
             /**
+             * @description User avatar image URL
+             * @example https://res.cloudinary.com/demo/image/upload/avatars/user.png
+             */
+            avatarUrl: string | null;
+            /**
              * @description Users role
              * @example ADMIN
              * @enum {string}
@@ -989,6 +1067,11 @@ export interface components {
              * @example Doe
              */
             lastName?: string;
+            /**
+             * @description User avatar image URL
+             * @example https://res.cloudinary.com/demo/image/upload/avatars/user.png
+             */
+            avatarUrl?: string;
         };
         ChangePasswordDto: {
             /**
@@ -1459,9 +1542,9 @@ export interface components {
              */
             notes?: string;
         };
-        CreatePaymentIntentDto: {
+        CreateCheckoutSessionDto: {
             /**
-             * @description ID of the order to create a payment intent for
+             * @description ID of the order to create a Stripe Checkout session for
              * @example 550e8400-e29b-41d4-a716-446655440000
              */
             orderId: string;
@@ -1520,12 +1603,12 @@ export interface components {
              */
             updatedAt: string;
         };
-        PaymentApiResponseDto: {
+        CheckoutSessionResponseDto: {
             /**
-             * @description Stripe PaymentIntent client secret, used by the frontend (Stripe.js) to confirm the payment
-             * @example pi_3Q9x2eKZ8f2s0h1_secret_aBcD1234
+             * @description URL of the Stripe-hosted Checkout page. Redirect the browser here to complete payment.
+             * @example https://checkout.stripe.com/c/pay/cs_test_a1b2c3
              */
-            clientSecret: string;
+            url: string;
             /** @description The payment record created for this order */
             payment: components["schemas"]["PaymentResponseDto"];
         };
@@ -1878,6 +1961,25 @@ export interface components {
              * @example Great product, works exactly as described!
              */
             comment?: string;
+        };
+        UploadResponseDto: {
+            /**
+             * @description Secure URL of the uploaded image
+             * @example https://res.cloudinary.com/demo/image/upload/v1700000000/nest-commerce/products/abc123.png
+             */
+            url: string;
+            /**
+             * @description Cloudinary public ID, needed to delete the image later
+             * @example nest-commerce/products/abc123
+             */
+            publicId: string;
+        };
+        DeleteUploadDto: {
+            /**
+             * @description Cloudinary public ID of the image to delete
+             * @example nest-commerce/products/abc123
+             */
+            publicId: string;
         };
     };
     responses: never;
@@ -3339,7 +3441,7 @@ export interface operations {
             };
         };
     };
-    PaymentsController_createIntent: {
+    PaymentsController_createCheckoutSession: {
         parameters: {
             query?: never;
             header?: never;
@@ -3348,17 +3450,17 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["CreatePaymentIntentDto"];
+                "application/json": components["schemas"]["CreateCheckoutSessionDto"];
             };
         };
         responses: {
-            /** @description The created payment intent */
+            /** @description The created checkout session */
             201: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["PaymentApiResponseDto"];
+                    "application/json": components["schemas"]["CheckoutSessionResponseDto"];
                 };
             };
             /** @description Unauthorized */
@@ -4126,6 +4228,179 @@ export interface operations {
                         [key: string]: string[];
                     };
                 };
+            };
+        };
+    };
+    UploadsController_uploadAvatar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": {
+                    /** Format: binary */
+                    file?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description The uploaded image URL and public ID */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UploadResponseDto"];
+                };
+            };
+            /** @description No file or invalid image type */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    UploadsController_uploadProductImage: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": {
+                    /** Format: binary */
+                    file?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description The uploaded image URL and public ID */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UploadResponseDto"];
+                };
+            };
+            /** @description No file or invalid image type */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    UploadsController_uploadCategoryImage: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": {
+                    /** Format: binary */
+                    file?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description The uploaded image URL and public ID */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UploadResponseDto"];
+                };
+            };
+            /** @description No file or invalid image type */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    UploadsController_deleteImage: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DeleteUploadDto"];
+            };
+        };
+        responses: {
+            /** @description Image deleted successfully */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };

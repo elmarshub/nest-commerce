@@ -62,6 +62,7 @@ async function bootstrap() {
     .addTag('Reviews')
     .addTag('Meta')
     .addTag('Audits')
+    .addTag('Uploads')
     .addBearerAuth(
       {
         type: 'http',

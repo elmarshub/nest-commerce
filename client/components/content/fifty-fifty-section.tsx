@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 
 const ITEMS = [
   {
@@ -24,12 +25,13 @@ export function FiftyFiftySection() {
         {ITEMS.map((item) => (
           <div key={item.href}>
             <Link href={item.href} className="block">
-              <div className="w-full aspect-square mb-3 overflow-hidden">
-                {/* eslint-disable-next-line @next/next/no-img-element -- static asset, plain img keeps this a server component */}
-                <img
+              <div className="relative w-full aspect-square mb-3 overflow-hidden">
+                <Image
                   src={item.image}
                   alt={item.alt}
-                  className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
+                  fill
+                  sizes="(min-width: 768px) 50vw, 100vw"
+                  className="object-cover hover:scale-105 transition-transform duration-300"
                 />
               </div>
             </Link>

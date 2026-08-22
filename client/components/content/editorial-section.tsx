@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { ArrowRight } from "lucide-react";
 
 const FOUNDERS_IMAGE = "/founders.png";
@@ -27,12 +28,13 @@ export function EditorialSection() {
         </div>
 
         <div className="order-first md:order-last">
-          <div className="w-full aspect-square overflow-hidden">
-            {/* eslint-disable-next-line @next/next/no-img-element -- static asset, plain img keeps this a server component */}
-            <img
+          <div className="relative w-full aspect-square overflow-hidden">
+            <Image
               src={FOUNDERS_IMAGE}
               alt="Haven founders"
-              className="w-full h-full object-cover"
+              fill
+              sizes="(min-width: 768px) 50vw, 100vw"
+              className="object-cover"
             />
           </div>
         </div>

@@ -4,18 +4,23 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { User, Heart } from "lucide-react";
+import { User, Heart, ShieldCheck, LogOut } from "lucide-react";
 import { ShoppingBagDrawer } from "./shopping-bag-drawer";
 import { WishlistDrawer } from "./wishlist-drawer";
 import { SearchOverlay } from "@/components/search/search-overlay";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { UserAvatar } from "@/components/ui/user-avatar";
 import { useCartStore } from "@/lib/stores/cart-store";
 import { useAuthStore } from "@/lib/stores/auth-store";
 import { useWishlistStore } from "@/lib/stores/wishlist-store";
 import { useAuthModalStore } from "@/lib/stores/auth-modal-store";
 
-// TODO: real category imagery for the mega-menu (Haven's version used
-// /rings-collection.png etc.) once product photography is sourced —
-// dropped for now rather than linking to images that don't exist yet.
 const navItems = [
   {
     name: "Shop",
@@ -104,14 +109,17 @@ export function Navigation() {
         </div>
 
         <div className="absolute left-1/2 transform -translate-x-1/2">
-          <Link href="/" className="block text-xl font-light tracking-widest text-foreground">
+          <Link
+            href="/"
+            className="block text-xl font-light tracking-widest text-foreground"
+          >
             HAVEN
           </Link>
         </div>
 
         <div className="flex items-center space-x-2">
           <button
-            className="p-2 text-nav-foreground hover:text-nav-hover transition-colors duration-200"
+            className="p-2 text-nav-foreground hover:text-nav-hover transition-colors cursor-pointer duration-200"
             aria-label="Search"
             onClick={() => setIsSearchOpen(!isSearchOpen)}
           >
@@ -132,7 +140,7 @@ export function Navigation() {
           </button>
 
           <button
-            className="p-2 text-nav-foreground hover:text-nav-hover transition-colors duration-200 relative"
+            className="p-2 text-nav-foreground cursor-pointer hover:text-nav-hover transition-colors duration-200 relative"
             aria-label="Favorites"
             onClick={() => setIsWishlistOpen(true)}
           >
@@ -144,16 +152,52 @@ export function Navigation() {
             )}
           </button>
 
-          <button
-            className="hidden lg:block p-2 text-nav-foreground hover:text-nav-hover transition-colors duration-200"
-            aria-label={user ? "Account" : "Sign in"}
-            onClick={() => (user ? router.push("/account") : openAuthModal())}
-          >
-            <User className="w-5 h-5" />
-          </button>
+          {user ? (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button
+                  className="hidden lg:block p-1 text-nav-foreground cursor-pointer hover:opacity-80 transition-opacity duration-200"
+                  aria-label="Account"
+                >
+                  <UserAvatar email={user.email} avatarUrl={user.avatarUrl} size="sm" />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="rounded-none">
+                <DropdownMenuItem onClick={() => router.push("/account")}>
+                  Profile
+                </DropdownMenuItem>
+                {user.role === "ADMIN" && (
+                  <DropdownMenuItem onClick={() => router.push("/admin")}>
+                    <ShieldCheck />
+                    Admin
+                  </DropdownMenuItem>
+                )}
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  variant="destructive"
+                  onClick={async () => {
+                    await signOut();
+                    router.push("/");
+                  }}
+                >
+                  <LogOut />
+                  Logout
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          ) : (
+            <button
+              className="hidden lg:block p-2 text-nav-foreground cursor-pointer hover:text-nav-hover transition-colors duration-200"
+              aria-label="Sign in"
+              onClick={() => openAuthModal()}
+            >
+              <User className="w-5 h-5" />
+            </button>
+          )}
 
           <button
-            className="p-2 text-nav-foreground hover:text-nav-hover transition-colors duration-200 relative"
+            className="p-2 text-nav-foreground hover:text-nav-hover cursor-pointer
+             transition-colors duration-200 relative"
             aria-label="Shopping bag"
             onClick={() => setIsShoppingBagOpen(true)}
           >
@@ -215,7 +259,10 @@ export function Navigation() {
         )}
       </AnimatePresence>
 
-      <SearchOverlay isOpen={isSearchOpen} onClose={() => setIsSearchOpen(false)} />
+      <SearchOverlay
+        isOpen={isSearchOpen}
+        onClose={() => setIsSearchOpen(false)}
+      />
 
       <AnimatePresence>
         {isMobileMenuOpen && (
@@ -268,6 +315,15 @@ export function Navigation() {
                       >
                         My Account
                       </Link>
+                      {user.role === "ADMIN" && (
+                        <Link
+                          href="/admin"
+                          onClick={() => setIsMobileMenuOpen(false)}
+                          className="text-nav-foreground hover:text-nav-hover text-sm font-light block"
+                        >
+                          Admin
+                        </Link>
+                      )}
                       <button
                         onClick={() => {
                           signOut();
@@ -300,7 +356,10 @@ export function Navigation() {
         isOpen={isShoppingBagOpen}
         onClose={() => setIsShoppingBagOpen(false)}
       />
-      <WishlistDrawer isOpen={isWishlistOpen} onClose={() => setIsWishlistOpen(false)} />
+      <WishlistDrawer
+        isOpen={isWishlistOpen}
+        onClose={() => setIsWishlistOpen(false)}
+      />
     </nav>
   );
 }

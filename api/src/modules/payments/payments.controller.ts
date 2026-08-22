@@ -31,8 +31,8 @@ import {
 import { Request } from 'express';
 import { PaymentsService } from './payments.service';
 import { PaymentsWebhookService } from './payments-webhook.service';
-import { CreatePaymentIntentDto } from './dto/create-payment-intent.dto';
-import { PaymentApiResponseDto } from './dto/payment-api-response.dto';
+import { CreateCheckoutSessionDto } from './dto/create-checkout-session.dto';
+import { CheckoutSessionResponseDto } from './dto/checkout-session-response.dto';
 import { PaymentResponseDto } from './dto/payment-response.dto';
 import { QueryPaymentDto } from './dto/query-payment.dto';
 import { PaginatedPaymentsResponseDto } from './dto/paginated-payments-response.dto';
@@ -46,20 +46,20 @@ export class PaymentsController {
     private readonly auditLogService: AuditLogService,
   ) {}
 
-  @Post('create-intent')
+  @Post('create-checkout-session')
   @ApiBearerAuth('JWT-auth')
   @StrictThrottle()
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({
-    summary: 'Create a payment intent for an order',
+    summary: 'Create a Stripe Checkout session for an order',
     description:
-      'Creates a Stripe PaymentIntent for the given order and returns the client secret needed to confirm payment on the frontend',
+      'Creates a Stripe Checkout session for the given order, with line items built from the order contents (product name, image, price), and returns the hosted Checkout URL to redirect the browser to',
   })
-  @ApiBody({ type: CreatePaymentIntentDto })
+  @ApiBody({ type: CreateCheckoutSessionDto })
   @ApiResponse({
     status: 201,
-    description: 'The created payment intent',
-    type: PaymentApiResponseDto,
+    description: 'The created checkout session',
+    type: CheckoutSessionResponseDto,
   })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @ApiResponse({
@@ -68,13 +68,13 @@ export class PaymentsController {
   })
   @ApiResponse({ status: 404, description: 'Order not found' })
   @ApiResponse({ status: 409, description: 'This order has already been paid' })
-  async createIntent(
+  async createCheckoutSession(
     @GetUser('id') userId: string,
-    @Body() createPaymentIntentDto: CreatePaymentIntentDto,
-  ): Promise<PaymentApiResponseDto> {
-    return await this.paymentService.createIntent(
+    @Body() createCheckoutSessionDto: CreateCheckoutSessionDto,
+  ): Promise<CheckoutSessionResponseDto> {
+    return await this.paymentService.createCheckoutSession(
       userId,
-      createPaymentIntentDto,
+      createCheckoutSessionDto,
     );
   }
 

@@ -1,4 +1,4 @@
-import { api } from "./client";
+import { api, CATALOG_CACHE } from "./client";
 import type { paths } from "./schema";
 
 type FindAllProductsQuery = NonNullable<
@@ -8,6 +8,7 @@ type FindAllProductsQuery = NonNullable<
 export async function getProducts(query?: FindAllProductsQuery) {
   const { data, error } = await api.GET("/api/v1/products", {
     params: { query },
+    ...CATALOG_CACHE,
   });
 
   if (error) {
@@ -20,6 +21,7 @@ export async function getProducts(query?: FindAllProductsQuery) {
 export async function getProduct(id: string) {
   const { data, error } = await api.GET("/api/v1/products/{id}", {
     params: { path: { id } },
+    ...CATALOG_CACHE,
   });
 
   if (error) {

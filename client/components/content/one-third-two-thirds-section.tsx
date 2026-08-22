@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 
 const ITEMS = [
   {
@@ -26,12 +27,13 @@ export function OneThirdTwoThirdsSection() {
         {ITEMS.map((item) => (
           <div key={item.href} className={item.span}>
             <Link href={item.href} className="block">
-              <div className="w-full h-[500px] lg:h-[800px] mb-3 overflow-hidden">
-                {/* eslint-disable-next-line @next/next/no-img-element -- static asset, plain img keeps this a server component */}
-                <img
+              <div className="relative w-full h-[500px] lg:h-[800px] mb-3 overflow-hidden">
+                <Image
                   src={item.image}
                   alt={item.alt}
-                  className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
+                  fill
+                  sizes="(min-width: 1024px) 66vw, 100vw"
+                  className="object-cover hover:scale-105 transition-transform duration-300"
                 />
               </div>
             </Link>

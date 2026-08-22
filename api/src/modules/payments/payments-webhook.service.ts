@@ -74,11 +74,18 @@ export class PaymentsWebhookService {
 
     try {
       switch (event.type) {
-        case 'payment_intent.succeeded':
-          await this.applySucceeded(event.data.object);
+        case 'checkout.session.completed': {
+          const session = event.data.object;
+          if (
+            session.payment_status === 'paid' &&
+            typeof session.payment_intent === 'string'
+          ) {
+            await this.applySucceeded(session.id, session.payment_intent);
+          }
           break;
-        case 'payment_intent.payment_failed':
-          await this.applyFailed(event.data.object);
+        }
+        case 'checkout.session.expired':
+          await this.applyFailed(event.data.object.id);
           break;
         default:
           this.logger.log(`Unhandled Stripe event type: ${event.type}`);
@@ -94,14 +101,17 @@ export class PaymentsWebhookService {
     return { received: true };
   }
 
-  async applySucceeded(paymentIntent: Stripe.PaymentIntent): Promise<void> {
+  async applySucceeded(
+    sessionId: string,
+    paymentIntentId: string,
+  ): Promise<void> {
     const payment = await this.prisma.payment.findFirst({
-      where: { transactionId: paymentIntent.id },
+      where: { transactionId: sessionId },
     });
 
     if (!payment) {
       this.logger.warn(
-        `Received payment_intent.succeeded for unknown transaction ${paymentIntent.id}`,
+        `Received checkout.session.completed for unknown session ${sessionId}`,
       );
       return;
     }
@@ -109,7 +119,12 @@ export class PaymentsWebhookService {
     const order = await this.prisma.$transaction(async (tx) => {
       const { count } = await tx.payment.updateMany({
         where: { id: payment.id, status: PaymentStatus.PENDING },
-        data: { status: PaymentStatus.COMPLETED },
+        // Swap the tracked id for the real PaymentIntent now that it
+        // exists — refunds need a PaymentIntent id, not a Session id.
+        data: {
+          status: PaymentStatus.COMPLETED,
+          transactionId: paymentIntentId,
+        },
       });
 
       if (count !== 1) {
@@ -133,14 +148,14 @@ export class PaymentsWebhookService {
     });
   }
 
-  async applyFailed(paymentIntent: Stripe.PaymentIntent): Promise<void> {
+  async applyFailed(sessionId: string): Promise<void> {
     const payment = await this.prisma.payment.findFirst({
-      where: { transactionId: paymentIntent.id },
+      where: { transactionId: sessionId },
     });
 
     if (!payment) {
       this.logger.warn(
-        `Received payment_intent.payment_failed for unknown transaction ${paymentIntent.id}`,
+        `Received checkout.session.expired for unknown session ${sessionId}`,
       );
       return;
     }

@@ -1,6 +1,8 @@
 import { create } from "zustand";
 import * as authActions from "@/lib/auth/actions";
 import type { CurrentUser } from "@/lib/auth/session";
+import { useCartStore } from "@/lib/stores/cart-store";
+import { useWishlistStore } from "@/lib/stores/wishlist-store";
 
 interface AuthState {
   user: CurrentUser | null;
@@ -34,7 +36,11 @@ export const useAuthStore = create<AuthState>()((set) => ({
   signIn: async (email, password) => {
     set({ isLoading: true });
     const result = await authActions.login({ email, password });
-    if (result.user) set({ user: result.user });
+    if (result.user) {
+      useCartStore.getState().clearCart();
+      useWishlistStore.getState().clear();
+      set({ user: result.user });
+    }
     set({ isLoading: false });
     return { error: result.error };
   },
@@ -46,7 +52,11 @@ export const useAuthStore = create<AuthState>()((set) => ({
       password,
       ...splitName(fullName),
     });
-    if (result.user) set({ user: result.user });
+    if (result.user) {
+      useCartStore.getState().clearCart();
+      useWishlistStore.getState().clear();
+      set({ user: result.user });
+    }
     set({ isLoading: false });
     return { error: result.error };
   },
@@ -54,6 +64,8 @@ export const useAuthStore = create<AuthState>()((set) => ({
   signOut: async () => {
     set({ isLoading: true });
     await authActions.logout();
+    useCartStore.getState().clearCart();
+    useWishlistStore.getState().clear();
     set({ user: null, isLoading: false });
   },
 }));

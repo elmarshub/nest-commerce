@@ -31,6 +31,14 @@ export class AuthUserDto {
   lastName!: string | null;
 
   @ApiProperty({
+    description: 'User avatar image URL',
+    example: 'https://res.cloudinary.com/demo/image/upload/avatars/user.png',
+    type: String,
+    nullable: true,
+  })
+  avatarUrl!: string | null;
+
+  @ApiProperty({
     description: 'Users role',
     example: 'USER',
     enum: Role,

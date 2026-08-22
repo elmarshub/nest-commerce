@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Privacy Policy - Haven Jewelry",
+  title: "Privacy Policy",
 };
 
 export default function PrivacyPolicyPage() {
