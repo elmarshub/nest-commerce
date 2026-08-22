@@ -1,19 +1,23 @@
 import { AdminHeader } from "@/components/admin/admin-header";
 import { ReviewsProductPicker } from "@/components/admin/reviews/reviews-product-picker";
 import { ReviewsList } from "@/components/admin/reviews/reviews-list";
+import { Pagination } from "@/components/category/pagination";
 import { getProducts } from "@/lib/api/products";
 import { getProductReviews } from "@/lib/api/reviews";
 
+const PAGE_SIZE = 15;
+
 interface ReviewsPageProps {
-  searchParams: Promise<{ productId?: string }>;
+  searchParams: Promise<{ productId?: string; page?: string }>;
 }
 
 export default async function AdminReviewsPage({ searchParams }: ReviewsPageProps) {
-  const { productId } = await searchParams;
+  const { productId, page: pageParam } = await searchParams;
+  const page = Number(pageParam) || 1;
 
   const [products, reviews] = await Promise.all([
     getProducts({ limit: 100, sortBy: "name", sortOrder: "asc" }),
-    productId ? getProductReviews(productId) : null,
+    productId ? getProductReviews(productId, { page, limit: PAGE_SIZE }) : null,
   ]);
 
   return (
@@ -27,6 +31,9 @@ export default async function AdminReviewsPage({ searchParams }: ReviewsPageProp
         </p>
         <ReviewsProductPicker products={products.data} />
         {productId && <ReviewsList reviews={reviews?.data ?? []} />}
+        {productId && reviews && (
+          <Pagination currentPage={page} totalPages={reviews.meta.totalPages} />
+        )}
       </div>
     </div>
   );

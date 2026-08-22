@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Trash2 } from "lucide-react";
@@ -19,11 +20,27 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { ConfirmDeleteDialog } from "@/components/shared/confirm-delete-dialog";
 import { UserDetailsModal } from "@/components/admin/users/user-details-modal";
 import { updateUserRole, deleteUser } from "@/lib/admin/users/actions";
 import { formatDate } from "@/lib/format";
 import type { AdminUser } from "@/types/admin-user";
+
+function getUserDisplayName(user: AdminUser) {
+  return user.firstName
+    ? `${user.firstName} ${user.lastName ?? ""}`.trim()
+    : user.email;
+}
 
 export function UsersTable({
   users,
@@ -35,6 +52,10 @@ export function UsersTable({
   currentUserId: string;
 }) {
   const router = useRouter();
+  const [pendingRoleChange, setPendingRoleChange] = useState<{
+    user: AdminUser;
+    role: string;
+  } | null>(null);
 
   const handleRoleChange = async (id: string, role: string) => {
     const result = await updateUserRole(
@@ -49,6 +70,12 @@ export function UsersTable({
     }
     toast.success("Role updated");
     router.refresh();
+  };
+
+  const confirmRoleChange = async () => {
+    if (!pendingRoleChange) return;
+    await handleRoleChange(pendingRoleChange.user.id, pendingRoleChange.role);
+    setPendingRoleChange(null);
   };
 
   const handleDelete = async (id: string) => {
@@ -84,9 +111,7 @@ export function UsersTable({
           return (
             <TableRow key={user.id}>
               <TableCell className="font-medium text-foreground">
-                {user.firstName
-                  ? `${user.firstName} ${user.lastName ?? ""}`.trim()
-                  : "—"}
+                {user.firstName ? getUserDisplayName(user) : "—"}
               </TableCell>
               <TableCell className="text-muted-foreground">
                 {user.email}
@@ -94,7 +119,9 @@ export function UsersTable({
               <TableCell>
                 <Select
                   value={user.role}
-                  onValueChange={(value) => handleRoleChange(user.id, value)}
+                  onValueChange={(value) =>
+                    setPendingRoleChange({ user, role: value })
+                  }
                   disabled={isSelf}
                 >
                   <SelectTrigger className="w-32 rounded-none">
@@ -117,7 +144,7 @@ export function UsersTable({
                   <UserDetailsModal user={user} />
                   <ConfirmDeleteDialog
                     title="Delete this user?"
-                    description={`"${user.email}" will be permanently deleted. This cannot be undone.`}
+                    description={`"${getUserDisplayName(user)}" will be permanently deleted. This cannot be undone.`}
                     onConfirm={() => handleDelete(user.id)}
                     trigger={
                       <Button variant="ghost" size="icon-sm" disabled={isSelf}>
@@ -131,6 +158,35 @@ export function UsersTable({
           );
         })}
       </TableBody>
+      <AlertDialog
+        open={!!pendingRoleChange}
+        onOpenChange={(open) => !open && setPendingRoleChange(null)}
+      >
+        <AlertDialogContent className="rounded-none">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="font-light">
+              Change this user&apos;s role?
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {pendingRoleChange && (
+                <>
+                  &quot;{getUserDisplayName(pendingRoleChange.user)}&quot; will be updated to{" "}
+                  <span className="font-medium text-foreground">
+                    {pendingRoleChange.role}
+                  </span>
+                  .
+                </>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="rounded-none">Cancel</AlertDialogCancel>
+            <AlertDialogAction className="rounded-none" onClick={confirmRoleChange}>
+              Confirm
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Table>
   );
 }

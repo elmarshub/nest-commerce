@@ -1,4 +1,5 @@
 import { SidebarTrigger } from "@/components/ui/sidebar";
+import { AdminProfileMenu } from "@/components/admin/admin-profile-menu";
 
 export function AdminHeader({
   title,
@@ -13,7 +14,10 @@ export function AdminHeader({
         <SidebarTrigger className="rounded-none" />
         <h1 className="text-xl font-light text-foreground">{title}</h1>
       </div>
-      {actions}
+      <div className="flex items-center gap-4">
+        {actions}
+        <AdminProfileMenu />
+      </div>
     </header>
   );
 }

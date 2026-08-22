@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { PageHeader } from "@/components/about/page-header";
 import { ContentSection } from "@/components/about/content-section";
 import { Button } from "@/components/ui/button";
@@ -48,6 +49,12 @@ const FAQS = [
       "Every Haven piece comes with a certificate of authenticity and is hallmarked. You can verify authenticity on our website using your unique piece number or contact our customer care team.",
   },
 ];
+
+export const metadata: Metadata = {
+  title: "Customer Care",
+  description:
+    "We're here to help you with all your jewelry needs — contact information, FAQs, and support from the Haven team.",
+};
 
 export default function CustomerCarePage() {
   return (

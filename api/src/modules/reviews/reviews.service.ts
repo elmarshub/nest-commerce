@@ -9,6 +9,7 @@ import {
 } from '@nestjs/common';
 import { CreateReviewDto } from './dto/create-review.dto';
 import { UpdateReviewDto } from './dto/update-review.dto';
+import { ReplyReviewDto } from './dto/reply-review.dto';
 import { ReviewResponseDto } from './dto/review-response.dto';
 import { QueryReviewDto } from './dto/query-review.dto';
 import { PaginatedReviewsResponseDto } from './dto/paginated-reviews-response.dto';
@@ -68,6 +69,16 @@ export class ReviewsService {
     }
   }
 
+  async findAllForUser(userId: string): Promise<ReviewResponseDto[]> {
+    const reviews = await this.prisma.review.findMany({
+      where: { userId },
+      include: { user: true },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    return reviews.map((review) => this.formatReview(review));
+  }
+
   async findAllForProduct(
     productId: string,
     query: QueryReviewDto,
@@ -112,6 +123,38 @@ export class ReviewsService {
     return this.formatReview(review);
   }
 
+  async reply(id: string, data: ReplyReviewDto): Promise<ReviewResponseDto> {
+    const review = await this.prisma.review.findUnique({ where: { id } });
+
+    if (!review) {
+      throw new NotFoundException('Review not found');
+    }
+
+    const updated = await this.prisma.review.update({
+      where: { id },
+      data: { reply: data.reply, repliedAt: new Date() },
+      include: { user: true },
+    });
+
+    return this.formatReview(updated);
+  }
+
+  async removeReply(id: string): Promise<ReviewResponseDto> {
+    const review = await this.prisma.review.findUnique({ where: { id } });
+
+    if (!review) {
+      throw new NotFoundException('Review not found');
+    }
+
+    const updated = await this.prisma.review.update({
+      where: { id },
+      data: { reply: null, repliedAt: null },
+      include: { user: true },
+    });
+
+    return this.formatReview(updated);
+  }
+
   async remove(
     userId: string,
     role: Role,
@@ -154,6 +197,8 @@ export class ReviewsService {
       userName,
       rating: review.rating,
       comment: review.comment,
+      reply: review.reply,
+      repliedAt: review.repliedAt,
       createdAt: review.createdAt,
       updatedAt: review.updatedAt,
     };

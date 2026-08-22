@@ -11,6 +11,7 @@ import {
   paymentReceiptTemplate,
   refundConfirmationTemplate,
   orderStatusUpdateTemplate,
+  reviewRequestTemplate,
 } from './templates';
 
 @Injectable()
@@ -100,6 +101,21 @@ export class EmailService {
       to,
       `Order #${order.orderNumber} update: ${order.status}`,
       orderStatusUpdateTemplate(order),
+    );
+  }
+
+  async sendReviewRequestEmail(
+    to: string,
+    order: { orderNumber: string; items: { productName: string }[] },
+  ): Promise<void> {
+    await this.send(
+      to,
+      `How was your order? — #${order.orderNumber}`,
+      reviewRequestTemplate({
+        orderNumber: order.orderNumber,
+        items: order.items,
+        accountUrl: `${this.frontendUrl}/account`,
+      }),
     );
   }
 

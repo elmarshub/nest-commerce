@@ -198,9 +198,11 @@ export class OrdersService {
     id: string,
     { status, trackingNumber, notes }: UpdateOrderDto,
   ): Promise<OrderResponseDto> {
+    let existing: { status: OrderStatus } | null = null;
+
     try {
       if (status) {
-        const existing = await this.prisma.order.findUnique({
+        existing = await this.prisma.order.findUnique({
           where: { id },
           select: { status: true },
         });
@@ -236,6 +238,18 @@ export class OrdersService {
           status: formatted.status,
           trackingNumber: formatted.trackingNumber,
         });
+
+        if (
+          status === OrderStatus.DELIVERED &&
+          existing?.status !== OrderStatus.DELIVERED
+        ) {
+          await this.emailService.sendReviewRequestEmail(order.user.email, {
+            orderNumber: formatted.orderNumber,
+            items: formatted.items.map((item) => ({
+              productName: item.productName,
+            })),
+          });
+        }
       }
 
       return formatted;

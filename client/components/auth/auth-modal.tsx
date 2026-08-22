@@ -9,6 +9,7 @@ import { X, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
 import {
   Field,
   FieldGroup,
@@ -145,9 +146,8 @@ export function AuthModal() {
                   >
                     Password
                   </FieldLabel>
-                  <Input
+                  <PasswordInput
                     id="password"
-                    type="password"
                     {...loginForm.register("password")}
                     className="rounded-none"
                     placeholder="••••••••"
@@ -295,9 +295,8 @@ export function AuthModal() {
                   >
                     Password
                   </FieldLabel>
-                  <Input
+                  <PasswordInput
                     id="signupPassword"
-                    type="password"
                     {...signupForm.register("password")}
                     className="rounded-none"
                     placeholder="••••••••"
@@ -316,9 +315,8 @@ export function AuthModal() {
                   >
                     Confirm Password
                   </FieldLabel>
-                  <Input
+                  <PasswordInput
                     id="confirmPassword"
-                    type="password"
                     {...signupForm.register("confirmPassword")}
                     className="rounded-none"
                     placeholder="••••••••"

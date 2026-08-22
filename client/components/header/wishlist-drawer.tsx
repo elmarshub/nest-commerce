@@ -5,9 +5,10 @@ import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import Image from "next/image";
 import { toast } from "sonner";
-import { useWishlistStore } from "@/lib/stores/wishlist-store";
+import { useWishlist } from "@/lib/hooks/use-wishlist";
 import { useCartStore } from "@/lib/stores/cart-store";
 import { formatPrice } from "@/lib/format";
+import type { WishlistItem } from "@/types/wishlist";
 
 interface WishlistDrawerProps {
   isOpen: boolean;
@@ -15,14 +16,33 @@ interface WishlistDrawerProps {
 }
 
 export function WishlistDrawer({ isOpen, onClose }: WishlistDrawerProps) {
-  const { items, removeItem } = useWishlistStore();
+  const { items, remove } = useWishlist();
   const addToCart = useCartStore((state) => state.addItem);
 
-  const handleAddToCart = (item: (typeof items)[number]) => {
-    addToCart(item.product);
-    toast.success("Added to bag", {
-      description: `${item.product.name} has been added to your shopping bag.`,
+  const handleAddToCart = (item: WishlistItem) => {
+    if (!item.isAvailable) {
+      toast.error("Item unavailable", {
+        description: `${item.productName} is no longer available.`,
+      });
+      return;
+    }
+
+    addToCart({
+      id: item.productId,
+      name: item.productName,
+      price: item.price,
+      imageUrl: item.imageUrl,
     });
+    toast.success("Added to bag", {
+      description: `${item.productName} has been added to your shopping bag.`,
+    });
+  };
+
+  const handleRemove = async (productId: string) => {
+    const result = await remove(productId);
+    if (result.error) {
+      toast.error("Couldn't remove item", { description: result.error });
+    }
   };
 
   if (!isOpen) return null;
@@ -90,10 +110,10 @@ export function WishlistDrawer({ isOpen, onClose }: WishlistDrawerProps) {
                       onClick={onClose}
                       className="relative w-20 h-20 bg-muted/10 overflow-hidden flex-shrink-0"
                     >
-                      {item.product.imageUrl ? (
+                      {item.imageUrl ? (
                         <Image
-                          src={item.product.imageUrl}
-                          alt={item.product.name}
+                          src={item.imageUrl}
+                          alt={item.productName}
                           fill
                           sizes="80px"
                           className="object-cover"
@@ -107,11 +127,11 @@ export function WishlistDrawer({ isOpen, onClose }: WishlistDrawerProps) {
                         className="block"
                       >
                         <h3 className="text-sm font-medium text-foreground truncate hover:underline">
-                          {item.product.name}
+                          {item.productName}
                         </h3>
                       </Link>
                       <p className="text-sm font-light text-muted-foreground mt-1">
-                        {formatPrice(item.product.price)}
+                        {formatPrice(item.price)}
                       </p>
                       <div className="flex items-center gap-2 mt-3">
                         <button
@@ -122,7 +142,7 @@ export function WishlistDrawer({ isOpen, onClose }: WishlistDrawerProps) {
                           Add to Bag
                         </button>
                         <button
-                          onClick={() => removeItem(item.productId)}
+                          onClick={() => handleRemove(item.productId)}
                           className="p-1.5 text-muted-foreground hover:text-destructive transition-colors"
                           aria-label="Remove from favorites"
                         >

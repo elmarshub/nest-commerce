@@ -10,7 +10,7 @@ type AuditAction = NonNullable<
   paths["/api/v1/audit-logs"]["get"]["parameters"]["query"]
 >["action"];
 
-const PAGE_SIZE = 20;
+const PAGE_SIZE = 15;
 
 interface AuditLogPageProps {
   searchParams: Promise<{ page?: string; action?: string; actorId?: string }>;

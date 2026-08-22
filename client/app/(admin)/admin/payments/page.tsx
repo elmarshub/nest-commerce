@@ -11,7 +11,7 @@ type PaymentStatus = NonNullable<
   paths["/api/v1/payments"]["get"]["parameters"]["query"]
 >["status"];
 
-const PAGE_SIZE = 20;
+const PAGE_SIZE = 15;
 
 interface PaymentsPageProps {
   searchParams: Promise<{ page?: string; status?: string }>;

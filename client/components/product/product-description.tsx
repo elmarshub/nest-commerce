@@ -1,9 +1,14 @@
 "use client";
 
 import { useState } from "react";
-import { ChevronDown, ChevronUp } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { toast } from "sonner";
+import { ChevronDown, ChevronUp, Pencil, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { ConfirmDeleteDialog } from "@/components/shared/confirm-delete-dialog";
 import { ReviewProduct } from "./review-product";
+import { useAuthStore } from "@/lib/stores/auth-store";
+import { deleteReview } from "@/lib/reviews/actions";
 import type { Product } from "@/types/product";
 import type { Review } from "@/types/review";
 
@@ -62,9 +67,21 @@ export function ProductDescription({
   reviews: Review[];
   reviewsError?: boolean;
 }) {
+  const router = useRouter();
+  const user = useAuthStore((state) => state.user);
   const [openSection, setOpenSection] = useState<string | null>(null);
   const toggle = (section: string) =>
     setOpenSection((current) => (current === section ? null : section));
+
+  const handleDeleteReview = async (reviewId: string) => {
+    const result = await deleteReview(reviewId, product.id);
+    if (result.error) {
+      toast.error("Couldn't delete review", { description: result.error });
+      return;
+    }
+    toast.success("Review deleted");
+    router.refresh();
+  };
 
   const roundedRating = product.averageRating ? Math.round(product.averageRating) : 0;
 
@@ -137,25 +154,82 @@ export function ProductDescription({
               </p>
             ) : (
               <div className="space-y-6">
-                {reviews.map((review) => (
-                  <div key={review.id} className="space-y-3">
-                    <div className="flex items-center gap-2">
-                      <div className="flex items-center">
-                        {[1, 2, 3, 4, 5].map((star) => (
-                          <CustomStar key={star} filled={star <= review.rating} />
-                        ))}
+                {reviews.map((review) => {
+                  const canManage =
+                    user && (user.id === review.userId || user.role === "ADMIN");
+                  const isOwner = user?.id === review.userId;
+
+                  return (
+                    <div key={review.id} className="space-y-3">
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-2">
+                          <div className="flex items-center">
+                            {[1, 2, 3, 4, 5].map((star) => (
+                              <CustomStar key={star} filled={star <= review.rating} />
+                            ))}
+                          </div>
+                          <span className="text-sm font-light text-muted-foreground">
+                            {review.userName}
+                          </span>
+                        </div>
+                        {canManage && (
+                          <div className="flex items-center gap-1">
+                            {isOwner && (
+                              <ReviewProduct
+                                productId={product.id}
+                                existingReview={{
+                                  id: review.id,
+                                  rating: review.rating,
+                                  comment: review.comment ?? null,
+                                }}
+                                trigger={
+                                  <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="icon-sm"
+                                    className="cursor-pointer"
+                                  >
+                                    <Pencil className="h-3.5 w-3.5" />
+                                  </Button>
+                                }
+                              />
+                            )}
+                            <ConfirmDeleteDialog
+                              title="Delete this review?"
+                              description="This cannot be undone."
+                              onConfirm={() => handleDeleteReview(review.id)}
+                              trigger={
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="icon-sm"
+                                  className="cursor-pointer"
+                                >
+                                  <Trash2 className="h-3.5 w-3.5" />
+                                </Button>
+                              }
+                            />
+                          </div>
+                        )}
                       </div>
-                      <span className="text-sm font-light text-muted-foreground">
-                        {review.userName}
-                      </span>
+                      {review.comment && (
+                        <p className="text-sm font-light text-muted-foreground leading-relaxed">
+                          {review.comment}
+                        </p>
+                      )}
+                      {review.reply && (
+                        <div className="mt-3 border-l-2 border-primary/30 pl-3">
+                          <p className="text-xs font-medium text-foreground">
+                            Response from Haven
+                          </p>
+                          <p className="text-sm font-light text-muted-foreground leading-relaxed mt-1">
+                            {review.reply}
+                          </p>
+                        </div>
+                      )}
                     </div>
-                    {review.comment && (
-                      <p className="text-sm font-light text-muted-foreground leading-relaxed">
-                        {review.comment}
-                      </p>
-                    )}
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </div>
