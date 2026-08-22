@@ -56,9 +56,11 @@ function Accordion({
 export function ProductDescription({
   product,
   reviews,
+  reviewsError = false,
 }: {
   product: Product;
   reviews: Review[];
+  reviewsError?: boolean;
 }) {
   const [openSection, setOpenSection] = useState<string | null>(null);
   const toggle = (section: string) =>
@@ -125,7 +127,11 @@ export function ProductDescription({
           <div className="pb-6 space-y-6">
             <ReviewProduct productId={product.id} />
 
-            {reviews.length === 0 ? (
+            {reviewsError ? (
+              <p className="text-sm font-light text-muted-foreground">
+                Reviews couldn&apos;t be loaded right now. Please refresh to try again.
+              </p>
+            ) : reviews.length === 0 ? (
               <p className="text-sm font-light text-muted-foreground">
                 No reviews yet — be the first to review this piece.
               </p>

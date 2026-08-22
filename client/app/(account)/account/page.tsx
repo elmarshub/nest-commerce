@@ -7,12 +7,16 @@ import { AccountTabs } from "@/components/account/account-tabs";
 export default async function AccountPage() {
   const user = await getCurrentUser();
 
+  // AccountLayout already redirects guests before this renders; this is
+  // only to satisfy TypeScript that `user` is non-null below.
   if (!user) redirect("/");
 
   const [orders, addresses] = await Promise.all([
     getMyOrders(),
     getMyAddresses(),
   ]);
+
+  const loadFailed = orders === null || addresses === null;
 
   return (
     <div className="pt-16 pb-16">
@@ -22,7 +26,18 @@ export default async function AccountPage() {
           Manage your profile and view your order history
         </p>
 
-        <AccountTabs user={user} orders={orders.data} addresses={addresses} />
+        {loadFailed && (
+          <p className="mb-8 text-sm text-destructive">
+            We couldn&apos;t load some of your account data. Please refresh to
+            try again.
+          </p>
+        )}
+
+        <AccountTabs
+          user={user}
+          orders={orders?.data ?? []}
+          addresses={addresses ?? []}
+        />
       </div>
     </div>
   );

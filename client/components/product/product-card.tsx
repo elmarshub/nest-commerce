@@ -1,17 +1,19 @@
 import Link from "next/link";
+import Image from "next/image";
 import type { Product } from "@/types/product";
 import { formatPrice } from "@/lib/format";
 
 export function ProductCard({ product }: { product: Product }) {
   return (
     <Link href={`/product/${product.id}`} className="group flex flex-col gap-3">
-      <div className="aspect-square w-full overflow-hidden rounded-md bg-secondary">
+      <div className="relative aspect-square w-full overflow-hidden rounded-md bg-secondary">
         {product.imageUrl ? (
-          // eslint-disable-next-line @next/next/no-img-element -- remote product photography domains aren't finalized yet
-          <img
+          <Image
             src={product.imageUrl}
             alt={product.name}
-            className="h-full w-full object-cover transition-opacity group-hover:opacity-80"
+            fill
+            sizes="(min-width: 1024px) 25vw, (min-width: 640px) 33vw, 50vw"
+            className="object-cover transition-opacity group-hover:opacity-80"
           />
         ) : null}
       </div>

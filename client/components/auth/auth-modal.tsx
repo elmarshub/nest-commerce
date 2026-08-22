@@ -38,10 +38,10 @@ export function AuthModal() {
 
   const loginForm = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
-    defaultValues: {
-      email: "demo@havens-commerce.com",
-      password: "DemoUser2026!",
-    },
+    defaultValues:
+      process.env.NEXT_PUBLIC_DEMO_MODE === "true"
+        ? { email: "demo@havens-commerce.com", password: "DemoUser2026!" }
+        : { email: "", password: "" },
   });
   const signupForm = useForm<SignupFormValues>({
     resolver: zodResolver(signupSchema),

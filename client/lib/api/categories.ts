@@ -1,7 +1,7 @@
-import { api } from "./client";
+import { api, CATALOG_CACHE } from "./client";
 
 export async function getCategories() {
-  const { data, error } = await api.GET("/api/v1/categories");
+  const { data, error } = await api.GET("/api/v1/categories", CATALOG_CACHE);
 
   if (error) {
     throw new Error("Failed to load categories");
@@ -13,6 +13,7 @@ export async function getCategories() {
 export async function getCategoryBySlug(slug: string) {
   const { data, error } = await api.GET("/api/v1/categories/slug/{slug}", {
     params: { path: { slug } },
+    ...CATALOG_CACHE,
   });
 
   if (error) {

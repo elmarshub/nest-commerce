@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { MapPin, Pencil, Trash2, Plus, Star } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { AddressForm } from "@/components/account/address-form";
+import { ConfirmDeleteDialog } from "@/components/shared/confirm-delete-dialog";
 import {
   createAddress,
   updateAddress,
@@ -89,7 +90,7 @@ export function AddressesTab({
         {panel.mode === "closed" && (
           <Button
             onClick={() => setPanel({ mode: "add" })}
-            className="rounded-none"
+            className="rounded-none cursor-pointer"
           >
             <Plus className="mr-2 h-4 w-4" />
             Add Address
@@ -142,19 +143,27 @@ export function AddressesTab({
                     type="button"
                     variant="ghost"
                     size="icon-sm"
+                    className="cursor-pointer"
                     onClick={() => setPanel({ mode: "edit", address })}
                   >
                     <Pencil className="h-3.5 w-3.5" />
                   </Button>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon-sm"
-                    disabled={deletingId === address.id}
-                    onClick={() => handleDelete(address)}
-                  >
-                    <Trash2 className="h-3.5 w-3.5" />
-                  </Button>
+                  <ConfirmDeleteDialog
+                    title="Delete this address?"
+                    description={`"${address.label || address.line1}" will be permanently deleted. This cannot be undone.`}
+                    onConfirm={() => handleDelete(address)}
+                    trigger={
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon-sm"
+                        className="cursor-pointer"
+                        disabled={deletingId === address.id}
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </Button>
+                    }
+                  />
                 </div>
               </div>
 

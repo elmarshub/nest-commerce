@@ -19,6 +19,7 @@ import { ReviewsModule } from './modules/reviews/reviews.module';
 import { EmailModule } from './email/email.module';
 import { AuditLogModule } from './audit-log/audit-log.module';
 import { MetaModule } from './modules/meta/meta.module';
+import { UploadsModule } from './modules/uploads/uploads.module';
 
 @Module({
   imports: [
@@ -47,6 +48,7 @@ import { MetaModule } from './modules/meta/meta.module';
     AddressesModule,
     ReviewsModule,
     MetaModule,
+    UploadsModule,
   ],
   controllers: [AppController],
   providers: [

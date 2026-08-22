@@ -1,7 +1,7 @@
 "use server";
 
 import { api } from "@/lib/api/client";
-import { getAccessToken } from "@/lib/auth/tokens";
+import { requireAuthHeaders } from "@/lib/auth/authHeaders";
 import type { Review } from "@/types/review";
 
 type ReviewResult =
@@ -12,16 +12,18 @@ export async function createReview(
   productId: string,
   input: { rating: number; comment?: string },
 ): Promise<ReviewResult> {
-  const accessToken = await getAccessToken();
-  if (!accessToken) {
-    return { error: "Please sign in to leave a review", review: null };
+  const { headers, error: authError } = await requireAuthHeaders(
+    "Please sign in to leave a review",
+  );
+  if (!headers) {
+    return { error: authError, review: null };
   }
 
   const { data, error, response } = await api.POST(
     "/api/v1/products/{productId}/reviews",
     {
       params: { path: { productId } },
-      headers: { Authorization: `Bearer ${accessToken}` },
+      headers,
       body: input,
     },
   );

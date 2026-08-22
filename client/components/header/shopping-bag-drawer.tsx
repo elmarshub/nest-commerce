@@ -3,6 +3,7 @@
 import { X, Minus, Plus, Trash2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
+import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { useCartStore } from "@/lib/stores/cart-store";
 import { formatPrice } from "@/lib/format";
@@ -70,13 +71,14 @@ export function ShoppingBagDrawer({ isOpen, onClose }: ShoppingBagDrawerProps) {
                       exit={{ opacity: 0, x: 50 }}
                       className="flex gap-4"
                     >
-                      <div className="w-20 h-20 bg-muted/10 overflow-hidden flex-shrink-0">
+                      <div className="relative w-20 h-20 bg-muted/10 overflow-hidden flex-shrink-0">
                         {item.product.imageUrl ? (
-                          // eslint-disable-next-line @next/next/no-img-element -- remote product photography domains aren't finalized yet
-                          <img
+                          <Image
                             src={item.product.imageUrl}
                             alt={item.product.name}
-                            className="w-full h-full object-cover"
+                            fill
+                            sizes="80px"
+                            className="object-cover"
                           />
                         ) : null}
                       </div>

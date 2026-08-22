@@ -30,4 +30,13 @@ export class UpdateProfileDto {
   @IsString()
   @Length(1, 50, { message: 'Last name must be between 1 and 50 characters' })
   lastName?: string;
+
+  @ApiProperty({
+    description: 'User avatar image URL',
+    example: 'https://res.cloudinary.com/demo/image/upload/avatars/user.png',
+    required: false,
+  })
+  @IsOptional()
+  @IsString()
+  avatarUrl?: string;
 }
