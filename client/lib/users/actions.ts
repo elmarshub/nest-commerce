@@ -1,7 +1,7 @@
 "use server";
 
 import { api } from "@/lib/api/client";
-import { getAccessToken } from "@/lib/auth/tokens";
+import { requireAuthHeaders } from "@/lib/auth/authHeaders";
 import type { CurrentUser } from "@/lib/auth/session";
 
 type UpdateProfileResult =
@@ -12,13 +12,13 @@ export async function updateProfile(input: {
   firstName: string;
   lastName?: string;
 }): Promise<UpdateProfileResult> {
-  const accessToken = await getAccessToken();
-  if (!accessToken) {
-    return { error: "Please sign in", user: null };
+  const { headers, error: authError } = await requireAuthHeaders();
+  if (!headers) {
+    return { error: authError, user: null };
   }
 
   const { data, error } = await api.PATCH("/api/v1/users/me", {
-    headers: { Authorization: `Bearer ${accessToken}` },
+    headers,
     body: input,
   });
 

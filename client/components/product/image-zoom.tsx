@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import { X } from "lucide-react";
+import Image from "next/image";
 import { Button } from "@/components/ui/button";
 
 interface ImageZoomProps {
@@ -58,11 +59,13 @@ export function ImageZoom({ images, initialIndex, isOpen, onClose }: ImageZoomPr
         <div className="space-y-4">
           {images.map((image, index) => (
             <div key={index} className="w-full flex justify-center">
-              {/* eslint-disable-next-line @next/next/no-img-element -- remote product photography domains aren't finalized yet */}
-              <img
+              <Image
                 src={image}
                 alt={`Product view ${index + 1}`}
-                className="w-full max-w-none object-cover"
+                width={1200}
+                height={1200}
+                sizes="100vw"
+                className="w-full max-w-none h-auto object-cover"
               />
             </div>
           ))}

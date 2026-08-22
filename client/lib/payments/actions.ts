@@ -1,7 +1,7 @@
 "use server";
 
 import { api } from "@/lib/api/client";
-import { getAccessToken } from "@/lib/auth/tokens";
+import { requireAuthHeaders } from "@/lib/auth/authHeaders";
 import type { Payment } from "@/types/payment";
 
 type PaymentIntentResult =
@@ -11,17 +11,13 @@ type PaymentIntentResult =
 export async function createPaymentIntent(
   orderId: string,
 ): Promise<PaymentIntentResult> {
-  const accessToken = await getAccessToken();
-  if (!accessToken) {
-    return {
-      error: "Please sign in to continue",
-      clientSecret: null,
-      paymentId: null,
-    };
+  const { headers, error: authError } = await requireAuthHeaders();
+  if (!headers) {
+    return { error: authError, clientSecret: null, paymentId: null };
   }
 
   const { data, error } = await api.POST("/api/v1/payments/create-intent", {
-    headers: { Authorization: `Bearer ${accessToken}` },
+    headers,
     body: { orderId },
   });
 
@@ -41,12 +37,12 @@ export async function createPaymentIntent(
 }
 
 export async function syncPayment(paymentId: string): Promise<Payment | null> {
-  const accessToken = await getAccessToken();
-  if (!accessToken) return null;
+  const { headers } = await requireAuthHeaders();
+  if (!headers) return null;
 
   const { data, error } = await api.POST("/api/v1/payments/{id}/sync", {
     params: { path: { id: paymentId } },
-    headers: { Authorization: `Bearer ${accessToken}` },
+    headers,
   });
 
   if (error || !data) return null;

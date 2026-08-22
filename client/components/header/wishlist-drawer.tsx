@@ -3,6 +3,7 @@
 import { X, ShoppingBag, Trash2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
+import Image from "next/image";
 import { toast } from "sonner";
 import { useWishlistStore } from "@/lib/stores/wishlist-store";
 import { useCartStore } from "@/lib/stores/cart-store";
@@ -87,14 +88,15 @@ export function WishlistDrawer({ isOpen, onClose }: WishlistDrawerProps) {
                     <Link
                       href={`/product/${item.productId}`}
                       onClick={onClose}
-                      className="w-20 h-20 bg-muted/10 overflow-hidden flex-shrink-0"
+                      className="relative w-20 h-20 bg-muted/10 overflow-hidden flex-shrink-0"
                     >
                       {item.product.imageUrl ? (
-                        // eslint-disable-next-line @next/next/no-img-element -- remote product photography domains aren't finalized yet
-                        <img
+                        <Image
                           src={item.product.imageUrl}
                           alt={item.product.name}
-                          className="w-full h-full object-cover"
+                          fill
+                          sizes="80px"
+                          className="object-cover"
                         />
                       ) : null}
                     </Link>

@@ -1,3 +1,5 @@
+import Image from "next/image";
+
 interface ImageTextBlockProps {
   image: string;
   imageAlt: string;
@@ -19,12 +21,13 @@ export function ImageTextBlock({
         imagePosition === "right" ? "lg:flex-row-reverse" : "lg:flex-row"
       } gap-12 items-center`}
     >
-      <div className="flex-1">
-        {/* eslint-disable-next-line @next/next/no-img-element -- static asset, plain img keeps this a server component */}
-        <img
+      <div className="relative flex-1 aspect-square lg:aspect-auto lg:h-[800px]">
+        <Image
           src={image}
           alt={imageAlt}
-          className="w-full aspect-square lg:aspect-auto lg:h-[800px] object-cover"
+          fill
+          sizes="(min-width: 1024px) 50vw, 100vw"
+          className="object-cover"
         />
       </div>
       <div className="flex-1 space-y-6">
