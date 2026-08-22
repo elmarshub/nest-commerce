@@ -9,7 +9,7 @@ export async function getMyWishlist(): Promise<WishlistItem[] | null> {
 
   const { data, error } = await api.GET("/api/v1/wishlist", { headers });
 
-  if (error || !data) return null;
+  if (error) throw new Error("Failed to load wishlist");
 
-  return data;
+  return data ?? [];
 }

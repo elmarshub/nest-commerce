@@ -82,7 +82,7 @@ export function ReviewProduct({
     const result = isEdit
       ? await updateReview(existingReview.id, {
           rating,
-          comment: comment.trim() || undefined,
+          comment: comment.trim(),
         })
       : await createReview(productId, {
           rating,

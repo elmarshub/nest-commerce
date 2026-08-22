@@ -20,6 +20,13 @@ export function WishlistDrawer({ isOpen, onClose }: WishlistDrawerProps) {
   const addToCart = useCartStore((state) => state.addItem);
 
   const handleAddToCart = (item: WishlistItem) => {
+    if (!item.isAvailable) {
+      toast.error("Item unavailable", {
+        description: `${item.productName} is no longer available.`,
+      });
+      return;
+    }
+
     addToCart({
       id: item.productId,
       name: item.productName,
