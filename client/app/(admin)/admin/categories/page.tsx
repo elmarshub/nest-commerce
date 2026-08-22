@@ -24,18 +24,16 @@ export default async function AdminCategoriesPage({ searchParams }: CategoriesPa
 
   return (
     <div>
-      <AdminHeader
-        title="Categories"
-        actions={
+      <AdminHeader title="Categories" />
+      <div className="px-6 py-8">
+        <div className="flex justify-end mb-6">
           <Button asChild className="rounded-none">
             <Link href="/admin/categories/new">
               <Plus className="mr-2 h-4 w-4" />
               Add Category
             </Link>
           </Button>
-        }
-      />
-      <div className="px-6 py-8">
+        </div>
         <CategoriesTable categories={categories?.data ?? []} />
         {categories && (
           <Pagination currentPage={page} totalPages={categories.meta.totalPages} />

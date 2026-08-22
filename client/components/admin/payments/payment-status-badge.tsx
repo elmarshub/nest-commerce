@@ -3,13 +3,12 @@ import { cn } from "@/lib/utils";
 
 const STATUS_STYLES: Record<string, string> = {
   PENDING: "bg-muted text-muted-foreground",
-  PROCESSING: "bg-blue-100 text-blue-800",
-  SHIPPED: "bg-amber-100 text-amber-800",
-  DELIVERED: "bg-green-100 text-green-800",
-  CANCELLED: "bg-red-100 text-red-800",
+  COMPLETED: "bg-green-100 text-green-800",
+  FAILED: "bg-red-100 text-red-800",
+  REFUNDED: "bg-amber-100 text-amber-800",
 };
 
-export function OrderStatusBadge({ status }: { status: string }) {
+export function PaymentStatusBadge({ status }: { status: string }) {
   return (
     <Badge
       variant="secondary"

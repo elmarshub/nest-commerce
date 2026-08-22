@@ -1,4 +1,6 @@
-import Link from "next/link";
+"use client";
+
+import { useRouter } from "next/navigation";
 import {
   Table,
   TableBody,
@@ -12,6 +14,8 @@ import { formatPrice, formatDate } from "@/lib/format";
 import type { Order } from "@/types/order";
 
 export function OrdersTable({ orders }: { orders: Order[] }) {
+  const router = useRouter();
+
   if (orders.length === 0) {
     return (
       <p className="text-center text-muted-foreground py-12">
@@ -33,14 +37,13 @@ export function OrdersTable({ orders }: { orders: Order[] }) {
       </TableHeader>
       <TableBody>
         {orders.map((order) => (
-          <TableRow key={order.id}>
-            <TableCell>
-              <Link
-                href={`/admin/orders/${order.id}`}
-                className="font-medium text-foreground hover:underline"
-              >
-                #{order.orderNumber}
-              </Link>
+          <TableRow
+            key={order.id}
+            onClick={() => router.push(`/admin/orders/${order.id}`)}
+            className="cursor-pointer"
+          >
+            <TableCell className="font-medium text-foreground">
+              #{order.orderNumber}
             </TableCell>
             <TableCell className="text-muted-foreground">
               {order.userName} ({order.userEmail})
