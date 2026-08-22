@@ -20,6 +20,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { ConfirmDeleteDialog } from "@/components/shared/confirm-delete-dialog";
+import { UserDetailsModal } from "@/components/admin/users/user-details-modal";
 import { updateUserRole, deleteUser } from "@/lib/admin/users/actions";
 import { formatDate } from "@/lib/format";
 import type { AdminUser } from "@/types/admin-user";
@@ -112,16 +113,19 @@ export function UsersTable({
                 {formatDate(user.createdAt)}
               </TableCell>
               <TableCell className="text-right">
-                <ConfirmDeleteDialog
-                  title="Delete this user?"
-                  description={`"${user.email}" will be permanently deleted. This cannot be undone.`}
-                  onConfirm={() => handleDelete(user.id)}
-                  trigger={
-                    <Button variant="ghost" size="icon-sm" disabled={isSelf}>
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </Button>
-                  }
-                />
+                <div className="flex justify-end gap-1">
+                  <UserDetailsModal user={user} />
+                  <ConfirmDeleteDialog
+                    title="Delete this user?"
+                    description={`"${user.email}" will be permanently deleted. This cannot be undone.`}
+                    onConfirm={() => handleDelete(user.id)}
+                    trigger={
+                      <Button variant="ghost" size="icon-sm" disabled={isSelf}>
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </Button>
+                    }
+                  />
+                </div>
               </TableCell>
             </TableRow>
           );

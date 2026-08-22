@@ -6,8 +6,16 @@ import { Button } from "@/components/ui/button";
 import { ConfirmDeleteDialog } from "@/components/shared/confirm-delete-dialog";
 import { cancelOrder } from "@/lib/admin/orders/actions";
 
-export function CancelOrderButton({ orderId }: { orderId: string }) {
+export function CancelOrderButton({
+  orderId,
+  status,
+}: {
+  orderId: string;
+  status: string;
+}) {
   const router = useRouter();
+
+  if (status === "CANCELLED") return null;
 
   const handleCancel = async () => {
     const result = await cancelOrder(orderId);
@@ -26,10 +34,7 @@ export function CancelOrderButton({ orderId }: { orderId: string }) {
       confirmLabel="Cancel Order"
       onConfirm={handleCancel}
       trigger={
-        <Button
-          variant="outline"
-          className="rounded-none border-destructive text-destructive hover:bg-destructive hover:text-destructive-foreground"
-        >
+        <Button variant="destructive" className="rounded-none">
           Cancel Order
         </Button>
       }
