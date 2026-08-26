@@ -18,8 +18,8 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: {
-    default: "Haven",
-    template: "%s | Haven",
+    default: "Havens",
+    template: "%s | Havens",
   },
   description:
     "Handcrafted jewelry blending Nigerian artistry with contemporary elegance.",
