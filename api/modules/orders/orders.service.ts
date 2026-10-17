@@ -115,6 +115,13 @@ export class OrdersService {
     await this.emailService.sendOrderConfirmationEmail(order.user.email, {
       orderNumber: formatted.orderNumber,
       totalAmount: formatted.totalAmount,
+      shippingAddress: order.shippingAddress,
+      items: order.orderItems.map((item) => ({
+        productName: item.product.name,
+        quantity: item.quantity,
+        price: Number(item.price),
+        imageUrl: item.product.imageUrl,
+      })),
     });
 
     return formatted;

@@ -1,18 +1,26 @@
 import { escapeHtml } from '../../common/html-escape';
+import { emailLayout } from './layout';
 
 export function reviewRequestTemplate(order: {
   orderNumber: string;
   items: { productName: string }[];
   accountUrl: string;
+  shopUrl?: string;
 }): string {
   const itemsList = order.items
-    .map((item) => `<li>${escapeHtml(item.productName)}</li>`)
+    .map(
+      (item) =>
+        `<li style="margin:0 0 6px;">${escapeHtml(item.productName)}</li>`,
+    )
     .join('');
 
-  return `
-    <p>Your order <strong>#${escapeHtml(order.orderNumber)}</strong> has been delivered.</p>
-    <p>We'd love to hear what you think — leave a review for:</p>
-    <ul>${itemsList}</ul>
-    <p><a href="${order.accountUrl}">Leave a review</a></p>
-  `;
+  return emailLayout({
+    preheader: 'Tell us what you think of your order.',
+    icon: '&#9733;',
+    heading: 'How was your order?',
+    body: `<p style="margin:0 0 12px;text-align:center;">Your order <strong>#${escapeHtml(order.orderNumber)}</strong> has been delivered. We'd love to hear what you think of:</p>
+      <ul style="margin:0;padding-left:20px;">${itemsList}</ul>`,
+    cta: { label: 'Leave a review', url: order.accountUrl },
+    shopUrl: order.shopUrl,
+  });
 }

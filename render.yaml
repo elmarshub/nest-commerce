@@ -24,9 +24,10 @@ services:
       - key: JWT_EXPIRES_IN
         value: "900"
       - key: FRONTEND_URL
-        value: https://havens-commerce.vercel.app
+        value: https://havens.martinelmars.com
+      # comma-separated; the vercel.app URL stays allowed so the old link keeps working
       - key: ALLOWED_ORIGINS
-        value: https://havens-commerce.vercel.app
+        value: https://havens.martinelmars.com,https://havens-commerce.vercel.app
       # Secrets below are prompted for in the dashboard on first Blueprint sync
       - key: DATABASE_URL
         sync: false

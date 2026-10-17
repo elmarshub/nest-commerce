@@ -13,6 +13,14 @@ import {
   orderStatusUpdateTemplate,
   reviewRequestTemplate,
 } from './templates';
+import type { EmailItem } from './templates/layout';
+
+export interface EmailOrderItem {
+  productName: string;
+  quantity: number;
+  price: number;
+  imageUrl?: string | null;
+}
 
 @Injectable()
 export class EmailService {
@@ -58,23 +66,42 @@ export class EmailService {
 
   async sendOrderConfirmationEmail(
     to: string,
-    order: { orderNumber: string; totalAmount: number },
+    order: {
+      orderNumber: string;
+      totalAmount: number;
+      items?: EmailOrderItem[];
+      shippingAddress?: string | null;
+    },
   ): Promise<void> {
     await this.send(
       to,
       `Order confirmation — #${order.orderNumber}`,
-      orderConfirmationTemplate(order),
+      orderConfirmationTemplate({
+        ...order,
+        items: this.toEmailItems(order.items),
+        orderUrl: this.accountUrl,
+        shopUrl: this.frontendUrl,
+      }),
     );
   }
 
   async sendPaymentReceiptEmail(
     to: string,
-    payment: { orderNumber: string; amount: number },
+    payment: {
+      orderNumber: string;
+      amount: number;
+      items?: EmailOrderItem[];
+    },
   ): Promise<void> {
     await this.send(
       to,
       `Payment received — Order #${payment.orderNumber}`,
-      paymentReceiptTemplate(payment),
+      paymentReceiptTemplate({
+        ...payment,
+        items: this.toEmailItems(payment.items),
+        orderUrl: this.accountUrl,
+        shopUrl: this.frontendUrl,
+      }),
     );
   }
 
@@ -85,7 +112,7 @@ export class EmailService {
     await this.send(
       to,
       `Refund processed — Order #${payment.orderNumber}`,
-      refundConfirmationTemplate(payment),
+      refundConfirmationTemplate({ ...payment, shopUrl: this.frontendUrl }),
     );
   }
 
@@ -100,7 +127,11 @@ export class EmailService {
     await this.send(
       to,
       `Order #${order.orderNumber} update: ${order.status}`,
-      orderStatusUpdateTemplate(order),
+      orderStatusUpdateTemplate({
+        ...order,
+        orderUrl: this.accountUrl,
+        shopUrl: this.frontendUrl,
+      }),
     );
   }
 
@@ -114,9 +145,26 @@ export class EmailService {
       reviewRequestTemplate({
         orderNumber: order.orderNumber,
         items: order.items,
-        accountUrl: `${this.frontendUrl}/account`,
+        accountUrl: this.accountUrl,
+        shopUrl: this.frontendUrl,
       }),
     );
+  }
+
+  private get accountUrl(): string {
+    return `${this.frontendUrl}/account`;
+  }
+
+  // product images may be stored as paths relative to the storefront
+  private toEmailItems(items: EmailOrderItem[] = []): EmailItem[] {
+    return items.map((item) => ({
+      ...item,
+      imageUrl: item.imageUrl
+        ? /^https?:\/\//.test(item.imageUrl)
+          ? item.imageUrl
+          : `${this.frontendUrl}${item.imageUrl.startsWith('/') ? '' : '/'}${item.imageUrl}`
+        : null,
+    }));
   }
 
   private async send(to: string, subject: string, html: string): Promise<void> {
