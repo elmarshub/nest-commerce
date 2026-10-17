@@ -133,7 +133,10 @@ export class PaymentsWebhookService {
       return await tx.order.update({
         where: { id: payment.orderId },
         data: { status: OrderStatus.PROCESSING },
-        include: { user: true },
+        include: {
+          user: true,
+          orderItems: { include: { product: true } },
+        },
       });
     });
 
@@ -144,6 +147,12 @@ export class PaymentsWebhookService {
     await this.emailService.sendPaymentReceiptEmail(order.user.email, {
       orderNumber: order.orderNumber,
       amount: Number(payment.amount),
+      items: order.orderItems.map((item) => ({
+        productName: item.product.name,
+        quantity: item.quantity,
+        price: Number(item.price),
+        imageUrl: item.product.imageUrl,
+      })),
     });
   }
 

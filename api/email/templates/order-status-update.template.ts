@@ -10,6 +10,8 @@ export function orderStatusUpdateTemplate(order: {
   orderNumber: string;
   status: string;
   trackingNumber?: string | null;
+  orderUrl?: string;
+  shopUrl?: string;
 }): string {
   const status = escapeHtml(prettyStatus(order.status));
   const rows: [string, string][] = [
@@ -22,7 +24,12 @@ export function orderStatusUpdateTemplate(order: {
 
   return emailLayout({
     preheader: `Your order is now: ${prettyStatus(order.status)}.`,
+    icon: '&#9733;',
     heading: 'Your order has been updated',
-    body: `<p style="margin:0;">The status of your order has changed.</p>${detailsTable(rows)}`,
+    body: `<p style="margin:0;text-align:center;">The status of your order has changed.</p>${detailsTable(rows)}`,
+    cta: order.orderUrl
+      ? { label: 'View your order', url: order.orderUrl }
+      : undefined,
+    shopUrl: order.shopUrl,
   });
 }

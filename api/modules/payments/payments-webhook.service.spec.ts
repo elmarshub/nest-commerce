@@ -35,6 +35,7 @@ describe('PaymentsWebhookService', () => {
       order: {
         update: jest.fn().mockResolvedValue({
           orderNumber: 'ORD-1',
+          orderItems: [],
           user: { email: 'a@b.c' },
         }),
       },

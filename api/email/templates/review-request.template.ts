@@ -5,6 +5,7 @@ export function reviewRequestTemplate(order: {
   orderNumber: string;
   items: { productName: string }[];
   accountUrl: string;
+  shopUrl?: string;
 }): string {
   const itemsList = order.items
     .map(
@@ -15,9 +16,11 @@ export function reviewRequestTemplate(order: {
 
   return emailLayout({
     preheader: 'Tell us what you think of your order.',
+    icon: '&#9733;',
     heading: 'How was your order?',
-    body: `<p style="margin:0 0 12px;">Your order <strong>#${escapeHtml(order.orderNumber)}</strong> has been delivered. We'd love to hear what you think of:</p>
+    body: `<p style="margin:0 0 12px;text-align:center;">Your order <strong>#${escapeHtml(order.orderNumber)}</strong> has been delivered. We'd love to hear what you think of:</p>
       <ul style="margin:0;padding-left:20px;">${itemsList}</ul>`,
     cta: { label: 'Leave a review', url: order.accountUrl },
+    shopUrl: order.shopUrl,
   });
 }

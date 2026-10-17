@@ -57,4 +57,28 @@ describe('email templates', () => {
     expect(html).not.toContain('<script>');
     expect(html).not.toContain('<b>1</b>');
   });
+
+  it('lists order items with line totals and the order total', () => {
+    const html = orderConfirmationTemplate({
+      orderNumber: 'A1',
+      totalAmount: 45,
+      shippingAddress: '1 Main St',
+      items: [
+        {
+          productName: 'Gold <Ring>',
+          quantity: 2,
+          price: 20,
+          imageUrl: 'https://x.test/ring.png',
+        },
+      ],
+      orderUrl: 'https://x.test/account',
+    });
+    expect(html).toContain('Gold &lt;Ring&gt;');
+    expect(html).toContain('Qty 2');
+    expect(html).toContain('$40.00');
+    expect(html).toContain('$45.00');
+    expect(html).toContain('1 Main St');
+    expect(html).toContain('View your order');
+    expect(html).toContain('src="https://x.test/ring.png"');
+  });
 });
