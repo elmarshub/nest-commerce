@@ -15,6 +15,11 @@ import {
 } from './templates';
 import type { EmailItem } from './templates/layout';
 
+/** Readable order reference for emails: the last 8 characters of the id, uppercased. */
+export function shortOrderNumber(orderNumber: string): string {
+  return orderNumber.slice(-8).toUpperCase();
+}
+
 export interface EmailOrderItem {
   productName: string;
   quantity: number;
@@ -75,9 +80,10 @@ export class EmailService {
   ): Promise<void> {
     await this.send(
       to,
-      `Order confirmation — #${order.orderNumber}`,
+      `Order confirmation — #${shortOrderNumber(order.orderNumber)}`,
       orderConfirmationTemplate({
         ...order,
+        orderNumber: shortOrderNumber(order.orderNumber),
         items: this.toEmailItems(order.items),
         orderUrl: this.accountUrl,
         shopUrl: this.frontendUrl,
@@ -95,9 +101,10 @@ export class EmailService {
   ): Promise<void> {
     await this.send(
       to,
-      `Payment received — Order #${payment.orderNumber}`,
+      `Payment received — Order #${shortOrderNumber(payment.orderNumber)}`,
       paymentReceiptTemplate({
         ...payment,
+        orderNumber: shortOrderNumber(payment.orderNumber),
         items: this.toEmailItems(payment.items),
         orderUrl: this.accountUrl,
         shopUrl: this.frontendUrl,
@@ -111,8 +118,12 @@ export class EmailService {
   ): Promise<void> {
     await this.send(
       to,
-      `Refund processed — Order #${payment.orderNumber}`,
-      refundConfirmationTemplate({ ...payment, shopUrl: this.frontendUrl }),
+      `Refund processed — Order #${shortOrderNumber(payment.orderNumber)}`,
+      refundConfirmationTemplate({
+        ...payment,
+        orderNumber: shortOrderNumber(payment.orderNumber),
+        shopUrl: this.frontendUrl,
+      }),
     );
   }
 
@@ -126,9 +137,10 @@ export class EmailService {
   ): Promise<void> {
     await this.send(
       to,
-      `Order #${order.orderNumber} update: ${order.status}`,
+      `Order #${shortOrderNumber(order.orderNumber)} update: ${order.status}`,
       orderStatusUpdateTemplate({
         ...order,
+        orderNumber: shortOrderNumber(order.orderNumber),
         orderUrl: this.accountUrl,
         shopUrl: this.frontendUrl,
       }),
@@ -141,9 +153,9 @@ export class EmailService {
   ): Promise<void> {
     await this.send(
       to,
-      `How was your order? — #${order.orderNumber}`,
+      `How was your order? — #${shortOrderNumber(order.orderNumber)}`,
       reviewRequestTemplate({
-        orderNumber: order.orderNumber,
+        orderNumber: shortOrderNumber(order.orderNumber),
         items: order.items,
         accountUrl: this.accountUrl,
         shopUrl: this.frontendUrl,

@@ -13,7 +13,7 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuthStore } from "@/lib/stores/auth-store";
 import { updateProfile } from "@/lib/users/actions";
-import { formatPrice, formatDate } from "@/lib/format";
+import { formatPrice, formatDate, shortOrderNumber } from "@/lib/format";
 import {
   profileSchema,
   type ProfileFormValues,
@@ -257,7 +257,7 @@ export function AccountTabs({
                   <div className="flex flex-wrap items-center justify-between gap-4 mb-4">
                     <div>
                       <p className="text-sm text-muted-foreground">
-                        Order #{order.orderNumber}
+                        Order #{shortOrderNumber(order.orderNumber)}
                       </p>
                       <p className="text-xs text-muted-foreground">
                         {formatDate(order.createdAt)}

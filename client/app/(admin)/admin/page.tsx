@@ -17,7 +17,7 @@ import { getAdminOrders } from "@/lib/api/admin/orders";
 import { getAdminUsers } from "@/lib/api/admin/users";
 import { getAdminPayments } from "@/lib/api/admin/payments";
 import { getAuditLogs } from "@/lib/api/admin/audit-log";
-import { formatPrice, formatDate } from "@/lib/format";
+import { formatPrice, formatDate, shortOrderNumber } from "@/lib/format";
 
 const RECENT_LIMIT = 5;
 
@@ -118,7 +118,7 @@ export default async function AdminDashboardPage() {
                     href={`/admin/orders/${order.id}`}
                     className="flex items-center justify-between text-sm hover:underline"
                   >
-                    <span className="text-foreground">#{order.orderNumber}</span>
+                    <span className="text-foreground">#{shortOrderNumber(order.orderNumber)}</span>
                     <div className="flex items-center gap-3">
                       <OrderStatusBadge status={order.status} />
                       <span className="text-muted-foreground">

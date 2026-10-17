@@ -9,7 +9,7 @@ import { CancelOrderButton } from "@/components/admin/orders/cancel-order-button
 import { requireAuthHeaders } from "@/lib/auth/authHeaders";
 import { getAdminOrder } from "@/lib/api/admin/orders";
 import { getEnums } from "@/lib/api/meta";
-import { formatPrice, formatDate } from "@/lib/format";
+import { formatPrice, formatDate, shortOrderNumber } from "@/lib/format";
 
 interface OrderDetailPageProps {
   params: Promise<{ id: string }>;
@@ -47,7 +47,7 @@ export default async function AdminOrderDetailPage({ params }: OrderDetailPagePr
         <div className="bg-muted/20 p-8 space-y-4">
           <div className="flex items-center justify-between">
             <h2 className="text-lg font-light text-foreground">
-              Order #{order.orderNumber}
+              Order #{shortOrderNumber(order.orderNumber)}
             </h2>
             <OrderStatusBadge status={order.status} />
           </div>

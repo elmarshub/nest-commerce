@@ -3,7 +3,7 @@ import { Check, Package, MapPin, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { getOrder } from "@/lib/api/orders";
 import { reconcilePaymentForOrder } from "@/lib/payments/actions";
-import { formatPrice } from "@/lib/format";
+import { formatPrice, shortOrderNumber } from "@/lib/format";
 import { ClearCartOnSuccess } from "@/components/checkout/clear-cart-on-success";
 
 interface OrderSuccessPageProps {
@@ -65,7 +65,7 @@ export default async function OrderSuccessPage({ searchParams }: OrderSuccessPag
             <Package className="h-5 w-5 text-muted-foreground mt-0.5" />
             <div>
               <p className="text-sm text-muted-foreground">Order Number</p>
-              <p className="font-medium text-foreground">#{order.orderNumber}</p>
+              <p className="font-medium text-foreground">#{shortOrderNumber(order.orderNumber)}</p>
             </div>
           </div>
 

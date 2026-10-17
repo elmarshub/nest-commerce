@@ -14,3 +14,8 @@ export function formatDate(dateString: string): string {
     day: "numeric",
   });
 }
+
+/** Readable order reference (last 8 characters, uppercased); matches the emails. */
+export function shortOrderNumber(orderNumber: string): string {
+  return orderNumber.slice(-8).toUpperCase();
+}
