@@ -91,3 +91,17 @@ export async function resetPassword(input: {
 
   return { error: null };
 }
+
+export async function verifyEmail(token: string): Promise<MessageResult> {
+  const { error } = await api.POST("/api/v1/auth/verify-email", {
+    body: { token },
+  });
+
+  if (error) {
+    return {
+      error: "This verification link is invalid or has expired.",
+    };
+  }
+
+  return { error: null };
+}
