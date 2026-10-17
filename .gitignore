@@ -9,3 +9,5 @@ skills-lock.json
 **/.agents/
 **/.claude/
 **/skills-lock.json
+.windsurf/
+**/.windsurf/
