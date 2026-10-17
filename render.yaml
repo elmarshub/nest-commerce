@@ -31,6 +31,9 @@ services:
       # Secrets below are prompted for in the dashboard on first Blueprint sync
       - key: DATABASE_URL
         sync: false
+      # direct (non-pooled) Neon URL, used only by prisma migrate
+      - key: DIRECT_URL
+        sync: false
       - key: STRIPE_SECRET_KEY
         sync: false
       - key: STRIPE_WEBHOOK_SECRET
