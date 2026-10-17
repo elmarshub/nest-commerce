@@ -10,7 +10,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { OrderStatusBadge } from "@/components/admin/order-status-badge";
-import { formatPrice, formatDate } from "@/lib/format";
+import { formatPrice, formatDate, shortOrderNumber } from "@/lib/format";
 import type { Order } from "@/types/order";
 
 export function OrdersTable({ orders }: { orders: Order[] }) {
@@ -43,7 +43,7 @@ export function OrdersTable({ orders }: { orders: Order[] }) {
             className="cursor-pointer"
           >
             <TableCell className="font-medium text-foreground">
-              #{order.orderNumber}
+              #{shortOrderNumber(order.orderNumber)}
             </TableCell>
             <TableCell className="text-muted-foreground">
               {order.userName} ({order.userEmail})

@@ -6,6 +6,9 @@ import { Button } from "@/components/ui/button";
 import { ConfirmDeleteDialog } from "@/components/shared/confirm-delete-dialog";
 import { cancelOrder } from "@/lib/admin/orders/actions";
 
+// the API only lets admins cancel orders that have not been delivered
+const CANCELLABLE_STATUSES = ["PENDING", "PROCESSING", "SHIPPED"];
+
 export function CancelOrderButton({
   orderId,
   status,
@@ -15,7 +18,7 @@ export function CancelOrderButton({
 }) {
   const router = useRouter();
 
-  if (status === "CANCELLED") return null;
+  if (!CANCELLABLE_STATUSES.includes(status)) return null;
 
   const handleCancel = async () => {
     const result = await cancelOrder(orderId);
