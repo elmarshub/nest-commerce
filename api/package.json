@@ -7,13 +7,13 @@
   "license": "UNLICENSED",
   "scripts": {
     "build": "nest build && tsc-alias -p tsconfig.json",
-    "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
+    "format": "prettier --write \"**/*.ts\" --ignore-path .gitignore",
     "start": "nest start",
     "dev": "concurrently \"tsc-alias -p tsconfig.json --watch\" \"nest start --watch\"",
     "start:debug": "nest start --debug --watch",
-    "start:prod": "prisma migrate deploy && node dist/src/main",
+    "start:prod": "prisma migrate deploy && node dist/main",
     "postinstall": "prisma generate",
-    "lint": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix",
+    "lint": "eslint . --fix",
     "test": "jest",
     "test:watch": "jest --watch",
     "test:cov": "jest --coverage",
@@ -83,20 +83,30 @@
       "json",
       "ts"
     ],
-    "rootDir": "src",
+    "rootDir": ".",
     "testRegex": ".*\\.spec\\.ts$",
     "transform": {
       "^.+\\.(t|j)s$": "ts-jest"
     },
     "moduleNameMapper": {
       "^@/(.*)$": "<rootDir>/$1",
-      "^@generated/(.*)$": "<rootDir>/../generated/$1",
+      "^@generated/(.*)$": "<rootDir>/generated/$1",
       "^(\\.{1,2}/.*)\\.js$": "$1"
     },
-    "collectCoverageFrom": [
-      "**/*.(t|j)s"
+    "testPathIgnorePatterns": [
+      "/node_modules/",
+      "/dist/"
     ],
-    "coverageDirectory": "../coverage",
+    "collectCoverageFrom": [
+      "**/*.(t|j)s",
+      "!dist/**",
+      "!generated/**",
+      "!test/**",
+      "!prisma/seed*.ts",
+      "!prisma.config.ts",
+      "!coverage/**"
+    ],
+    "coverageDirectory": "coverage",
     "testEnvironment": "node"
   }
 }

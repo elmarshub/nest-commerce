@@ -126,7 +126,7 @@ export class ReviewsController {
   @Roles(Role.ADMIN)
   @ApiBearerAuth('JWT-auth')
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: "Reply to a review as Haven (admin only)" })
+  @ApiOperation({ summary: 'Reply to a review as Haven (admin only)' })
   @ApiParam({ name: 'id', description: 'The review id' })
   @ApiBody({ type: ReplyReviewDto })
   @ApiResponse({
