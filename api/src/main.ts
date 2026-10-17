@@ -3,6 +3,7 @@ import { AppModule } from './app.module';
 import { Logger } from '@nestjs/common/services/logger.service';
 import { ValidationPipe } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import helmet from 'helmet';
 import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
 
 async function bootstrap() {
@@ -10,7 +11,15 @@ async function bootstrap() {
 
   app.setGlobalPrefix('api/v1');
 
-  // catch every unhandled/thrown error and return a consistent error shape
+  app.use(
+    helmet({
+      contentSecurityPolicy: false,
+      crossOriginResourcePolicy: { policy: 'cross-origin' },
+    }),
+  );
+
+  app.enableShutdownHooks();
+
   app.useGlobalFilters(new AllExceptionsFilter());
 
   // set global pipes
@@ -34,18 +43,19 @@ async function bootstrap() {
   });
 
   // enable swagger docs
-  const productionServer: [string, string] = [
-    'https://nest-commerce-production-fa05.up.railway.app',
-    'Production Server',
-  ];
   const developmentServer: [string, string] = [
     'http://localhost:3001',
     'Development Server',
   ];
+  const productionUrl =
+    process.env.PUBLIC_API_URL ?? process.env.RENDER_EXTERNAL_URL;
+  const productionServers: [string, string][] = productionUrl
+    ? [[productionUrl, 'Production Server']]
+    : [];
   const servers =
     process.env.NODE_ENV === 'production'
-      ? [productionServer, developmentServer]
-      : [developmentServer, productionServer];
+      ? [...productionServers, developmentServer]
+      : [developmentServer, ...productionServers];
 
   let documentBuilder = new DocumentBuilder()
     .setTitle('Nest Commerce API')
