@@ -7,13 +7,13 @@
   "license": "UNLICENSED",
   "scripts": {
     "build": "nest build && tsc-alias -p tsconfig.json",
-    "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
+    "format": "prettier --write \"**/*.ts\" --ignore-path .gitignore",
     "start": "nest start",
     "dev": "concurrently \"tsc-alias -p tsconfig.json --watch\" \"nest start --watch\"",
     "start:debug": "nest start --debug --watch",
-    "start:prod": "prisma migrate deploy && node dist/src/main",
+    "start:prod": "prisma migrate deploy && node dist/main",
     "postinstall": "prisma generate",
-    "lint": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix",
+    "lint": "eslint . --fix",
     "test": "jest",
     "test:watch": "jest --watch",
     "test:cov": "jest --coverage",
@@ -38,6 +38,8 @@
     "class-transformer": "^0.5.1",
     "class-validator": "^0.15.1",
     "cloudinary": "^2.10.1",
+    "dotenv": "^18.0.8",
+    "helmet": "^8.3.0",
     "multer": "^2.2.0",
     "passport-jwt": "^4.0.1",
     "pg": "^8.23.0",
@@ -68,7 +70,6 @@
     "source-map-support": "^0.5.21",
     "supertest": "^7.0.0",
     "ts-jest": "^29.2.5",
-    "ts-loader": "^9.5.2",
     "ts-node": "^10.9.2",
     "tsc-alias": "^1.9.1",
     "tsconfig-paths": "^4.2.0",
@@ -82,20 +83,30 @@
       "json",
       "ts"
     ],
-    "rootDir": "src",
+    "rootDir": ".",
     "testRegex": ".*\\.spec\\.ts$",
     "transform": {
       "^.+\\.(t|j)s$": "ts-jest"
     },
     "moduleNameMapper": {
       "^@/(.*)$": "<rootDir>/$1",
-      "^@generated/(.*)$": "<rootDir>/../generated/$1",
+      "^@generated/(.*)$": "<rootDir>/generated/$1",
       "^(\\.{1,2}/.*)\\.js$": "$1"
     },
-    "collectCoverageFrom": [
-      "**/*.(t|j)s"
+    "testPathIgnorePatterns": [
+      "/node_modules/",
+      "/dist/"
     ],
-    "coverageDirectory": "../coverage",
+    "collectCoverageFrom": [
+      "**/*.(t|j)s",
+      "!dist/**",
+      "!generated/**",
+      "!test/**",
+      "!prisma/seed*.ts",
+      "!prisma.config.ts",
+      "!coverage/**"
+    ],
+    "coverageDirectory": "coverage",
     "testEnvironment": "node"
   }
 }
