@@ -1,13 +1,17 @@
 import { escapeHtml } from '../../common/html-escape';
+import { detailsTable, emailLayout, formatMoney } from './layout';
 
 export function refundConfirmationTemplate(payment: {
   orderNumber: string;
   amount: number;
 }): string {
-  return `
-    <p>Your refund has been processed.</p>
-    <p>Order number: <strong>${escapeHtml(payment.orderNumber)}</strong></p>
-    <p>Amount refunded: <strong>$${payment.amount.toFixed(2)}</strong></p>
-    <p>It may take a few business days to appear on your statement.</p>
-  `;
+  return emailLayout({
+    preheader: `Your refund of ${formatMoney(payment.amount)} is on its way.`,
+    heading: 'Your refund has been processed',
+    body: `<p style="margin:0;">We've refunded your payment. It may take a few business days to appear on your statement.</p>
+      ${detailsTable([
+        ['Order number', `#${escapeHtml(payment.orderNumber)}`],
+        ['Amount refunded', formatMoney(payment.amount)],
+      ])}`,
+  });
 }

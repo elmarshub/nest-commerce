@@ -1,13 +1,17 @@
 import { escapeHtml } from '../../common/html-escape';
+import { detailsTable, emailLayout, formatMoney } from './layout';
 
 export function paymentReceiptTemplate(payment: {
   orderNumber: string;
   amount: number;
 }): string {
-  return `
-    <p>We've received your payment.</p>
-    <p>Order number: <strong>${escapeHtml(payment.orderNumber)}</strong></p>
-    <p>Amount charged: <strong>$${payment.amount.toFixed(2)}</strong></p>
-    <p>Your order is now being processed.</p>
-  `;
+  return emailLayout({
+    preheader: `Payment of ${formatMoney(payment.amount)} received.`,
+    heading: 'Payment received',
+    body: `<p style="margin:0;">Thank you. We've received your payment and your order is now being processed.</p>
+      ${detailsTable([
+        ['Order number', `#${escapeHtml(payment.orderNumber)}`],
+        ['Amount charged', formatMoney(payment.amount)],
+      ])}`,
+  });
 }

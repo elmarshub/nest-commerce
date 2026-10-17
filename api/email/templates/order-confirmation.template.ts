@@ -1,11 +1,17 @@
+import { escapeHtml } from '../../common/html-escape';
+import { detailsTable, emailLayout, formatMoney } from './layout';
+
 export function orderConfirmationTemplate(order: {
   orderNumber: string;
   totalAmount: number;
 }): string {
-  return `
-    <p>Thanks for your order!</p>
-    <p>Order number: <strong>${order.orderNumber}</strong></p>
-    <p>Total: <strong>$${order.totalAmount.toFixed(2)}</strong></p>
-    <p>We'll let you know once your payment is confirmed.</p>
-  `;
+  return emailLayout({
+    preheader: `We've received your order #${order.orderNumber}.`,
+    heading: 'Thanks for your order!',
+    body: `<p style="margin:0;">We've received your order and will let you know as soon as your payment is confirmed.</p>
+      ${detailsTable([
+        ['Order number', `#${escapeHtml(order.orderNumber)}`],
+        ['Order total', formatMoney(order.totalAmount)],
+      ])}`,
+  });
 }
