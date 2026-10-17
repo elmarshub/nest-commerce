@@ -4,35 +4,30 @@ import { Prisma } from '@generated/prisma/client';
 import { OrderStatus, PaymentStatus } from '@generated/prisma/enums';
 import {
   BadRequestException,
+  Inject,
   Injectable,
   InternalServerErrorException,
   Logger,
 } from '@nestjs/common';
 import Stripe from 'stripe';
+import { STRIPE_CLIENT } from './stripe.provider';
 
 @Injectable()
 export class PaymentsWebhookService {
-  private readonly stripe: Stripe;
   private readonly webhookSecret: string;
   private readonly logger = new Logger(PaymentsWebhookService.name);
 
   constructor(
     private prisma: PrismaService,
     private emailService: EmailService,
+    @Inject(STRIPE_CLIENT) private readonly stripe: Stripe,
   ) {
-    if (!process.env.STRIPE_SECRET_KEY) {
-      throw new InternalServerErrorException(
-        'STRIPE_SECRET_KEY is not configured',
-      );
-    }
-
     if (!process.env.STRIPE_WEBHOOK_SECRET) {
       throw new InternalServerErrorException(
         'STRIPE_WEBHOOK_SECRET is not configured',
       );
     }
 
-    this.stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
     this.webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
   }
 
@@ -74,7 +69,10 @@ export class PaymentsWebhookService {
 
     try {
       switch (event.type) {
-        case 'checkout.session.completed': {
+        // Delayed methods (e.g. bank debits) complete with payment_status
+        // 'unpaid' and settle later via async_payment_succeeded.
+        case 'checkout.session.completed':
+        case 'checkout.session.async_payment_succeeded': {
           const session = event.data.object;
           if (
             session.payment_status === 'paid' &&
@@ -85,6 +83,7 @@ export class PaymentsWebhookService {
           break;
         }
         case 'checkout.session.expired':
+        case 'checkout.session.async_payment_failed':
           await this.applyFailed(event.data.object.id);
           break;
         default:

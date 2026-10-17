@@ -6,6 +6,7 @@ import {
   BadRequestException,
   ConflictException,
   ForbiddenException,
+  Inject,
   Injectable,
   InternalServerErrorException,
   NotFoundException,
@@ -18,24 +19,18 @@ import { PaymentResponseDto } from './dto/payment-response.dto';
 import { QueryPaymentDto } from './dto/query-payment.dto';
 import { PaginatedPaymentsResponseDto } from './dto/paginated-payments-response.dto';
 import { PaymentsWebhookService } from './payments-webhook.service';
+import { STRIPE_CLIENT } from './stripe.provider';
 
 @Injectable()
 export class PaymentsService {
-  private readonly stripe: Stripe;
   private readonly frontendUrl: string;
 
   constructor(
     private prisma: PrismaService,
     private emailService: EmailService,
     private paymentsWebhookService: PaymentsWebhookService,
+    @Inject(STRIPE_CLIENT) private readonly stripe: Stripe,
   ) {
-    if (!process.env.STRIPE_SECRET_KEY) {
-      throw new InternalServerErrorException(
-        'STRIPE_SECRET_KEY is not configured',
-      );
-    }
-
-    this.stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
     this.frontendUrl = process.env.FRONTEND_URL ?? 'http://localhost:3000';
   }
 

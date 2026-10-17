@@ -3,6 +3,7 @@ import { PrismaService } from '@/prisma/prisma.service';
 import { EmailService } from '@/email/email.service';
 import { PaymentsService } from './payments.service';
 import { PaymentsWebhookService } from './payments-webhook.service';
+import { STRIPE_CLIENT } from './stripe.provider';
 
 describe('PaymentsService', () => {
   let service: PaymentsService;
@@ -19,6 +20,7 @@ describe('PaymentsService', () => {
         { provide: PrismaService, useValue: {} },
         { provide: EmailService, useValue: {} },
         { provide: PaymentsWebhookService, useValue: {} },
+        { provide: STRIPE_CLIENT, useValue: {} },
       ],
     }).compile();
 
