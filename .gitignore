@@ -11,3 +11,5 @@ skills-lock.json
 **/skills-lock.json
 .windsurf/
 **/.windsurf/
+config.bat
+node_modules
