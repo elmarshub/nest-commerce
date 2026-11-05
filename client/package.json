@@ -3,9 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "node init && next dev",
-    "build": "node init && next build",
-    "start": "node init && next start",
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
     "lint": "eslint",
     "api:types": "openapi-typescript http://127.0.0.1:3001/api/docs-json -o lib/api/schema.d.ts"
   },
